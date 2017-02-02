@@ -82,7 +82,7 @@
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
 // Returns: A SLOT_ID.
-#define slotmap_id(a,o)       slotmap__id((o)-slotmap__head(a), (o)->version)
+#define slotmap_id(a,o)       slotmap__id((o)-slotmap_array(a), (o)->version)
 
 // Get a pointer to an element by supplying the slot map 'a' that contains it and its SLOT_ID 'id'.
 // Returns: A pointer to the element or NULL if the element is not found.
@@ -90,7 +90,7 @@
   SLOT_ID __id__ = slotmap_at(id); \
   __typeof__(a) item = NULL; \
   if (__id__ < slotmap__use(a)) { \
-    item = slotmap__head(a) + __id__; \
+    item = slotmap_array(a) + __id__; \
     item = (item->version != (id >> 24) ? NULL : item); \
   } \
   item; \
@@ -109,11 +109,13 @@
   item; \
 }))
 
+// Fetch the beginning of the actual items.
+#define slotmap_array(a)      ((__typeof__(a))(((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE + slotmap__siz(a))))
+
 //
 // internal macros
 //
 #define slotmap__id(index,v)  (slotmap_at(index) | ((SLOT_ID)(v) << 24))
-#define slotmap__head(a)      ((__typeof__(a))(((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE + slotmap__siz(a))))
 #define slotmap__freelist(a)  (((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE))
 #define slotmap__siz(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 0]
 #define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
@@ -140,7 +142,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     x = slotmap__frl(arr);
     if (x) {
       *idp = x = slotmap__freelist(arr)[--slotmap__frl(arr)];
-      return slotmap__head(arr) + (slotmap_at(x) * itemsize);
+      return slotmap_array(arr) + (slotmap_at(x) * itemsize);
     } else {
       siz = slotmap__siz(arr);
       used = slotmap__use(arr);
@@ -173,7 +175,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     }
     *idp = x = p[1 + SLOT_EXT_SIZE]++;
     arr = *ary;
-    return slotmap__head(arr) + (x * itemsize);
+    return slotmap_array(arr) + (x * itemsize);
   }
 
   *idp = SLOTMAP_NONE_ID;
