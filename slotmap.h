@@ -149,8 +149,8 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   // Allocate additional space
   // 
   newsiz = SLOT_ALIGN(
-    (SLOT_FLEX_SIZE(siz + 1) * (itemsize + sizeof(SLOT_ID))) +
-    (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE)), SLOTMAP_MIN_SIZE);
+    (SLOT_FLEX_SIZE(siz) * (itemsize + sizeof(SLOT_ID))) +
+    (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE)), SLOT_ALIGN_SIZE);
   if (used == siz) {
     p = (SLOT_ID *)realloc(arr ? slotmap__head(arr) : 0, newsiz);
     x = (newsiz - (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE))) / (itemsize + sizeof(SLOT_ID));
