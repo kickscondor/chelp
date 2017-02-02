@@ -13,7 +13,12 @@
 //
 // So basically, the layout looks like this:
 //
-// | freelist (alloc * u32) | alloc | len | freelist_len | ... actual items ... |
+//   char[SLOT_EXT_SIZE] user_data
+//   uint32_t allocated_entries
+//   uint32_t filled_entries
+//   uint32_t freelist_entries
+//   uint32_t[allocated_entries] freelist
+//   user_struct[allocated_entries] items
 //
 // You can't 'push' on to the slot map. Everything is kept unordered.
 // (So you'll need to used linked-list strategies or an external list to order this.)
@@ -55,7 +60,7 @@
 // Free an entire slot map 'a' from memory. This doesn't just free the slot map metadata -
 // everything is freed. Elements are part of the contiguous block of the slot map.
 // Returns: NULL.
-#define slotmap_free(a)       ((a) ? free(slotmap__head(a)),0 : 0)
+#define slotmap_free(a)       ((a) ? free(a),0 : 0)
 
 // A count of how many entries in the slot map 'a' have been used in the allocation block.
 // Some of these may be freed already, however.
@@ -77,7 +82,7 @@
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
 // Returns: A SLOT_ID.
-#define slotmap_id(a,o)       slotmap__id((o)-(a), (o)->version)
+#define slotmap_id(a,o)       slotmap__id((o)-slotmap__head(a), (o)->version)
 
 // Get a pointer to an element by supplying the slot map 'a' that contains it and its SLOT_ID 'id'.
 // Returns: A pointer to the element or NULL if the element is not found.
@@ -85,7 +90,7 @@
   SLOT_ID __id__ = slotmap_at(id); \
   __typeof__(a) item = NULL; \
   if (__id__ < slotmap__use(a)) { \
-    item = a + slotmap_at(id); \
+    item = slotmap__head(a) + __id__; \
     item = (item->version != (id >> 24) ? NULL : item); \
   } \
   item; \
@@ -99,23 +104,20 @@
   __typeof__(a) item = slotmap_get(a,id); \
   if (item) { \
     item->version++; \
-    *(slotmap__head(a) + (slotmap__frl(a)++)) = slotmap__id(id, item->version); \
+    slotmap__freelist(a)[slotmap__frl(a)++] = slotmap__id(id, item->version); \
   } \
   item; \
 }))
-
-// Access extra fields reserved for the user.
-#define slotmap_ext(a)        ((SLOT_ID *) (a) - SLOT_EXT_SIZE)
 
 //
 // internal macros
 //
 #define slotmap__id(index,v)  (slotmap_at(index) | ((SLOT_ID)(v) << 24))
-#define slotmap__head(a)      (slotmap__meta(a) - slotmap__siz(a))
-#define slotmap__meta(a)      ((SLOT_ID *) (a) - (3 + SLOT_EXT_SIZE))
-#define slotmap__siz(a)       slotmap__meta(a)[0]
-#define slotmap__use(a)       slotmap__meta(a)[1]
-#define slotmap__frl(a)       slotmap__meta(a)[2]
+#define slotmap__head(a)      ((__typeof__(a))(((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE + slotmap__siz(a))))
+#define slotmap__freelist(a)  (((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE))
+#define slotmap__siz(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 0]
+#define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
+#define slotmap__frl(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 2]
 
 #include <string.h>
 
@@ -137,8 +139,8 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   if (arr) {
     x = slotmap__frl(arr);
     if (x) {
-      *idp = x = *(slotmap__head(arr) + (--slotmap__frl(arr)));
-      return arr + (slotmap_at(x) * itemsize);
+      *idp = x = slotmap__freelist(arr)[--slotmap__frl(arr)];
+      return slotmap__head(arr) + (slotmap_at(x) * itemsize);
     } else {
       siz = slotmap__siz(arr);
       used = slotmap__use(arr);
@@ -152,15 +154,14 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     (SLOT_FLEX_SIZE(siz) * (itemsize + sizeof(SLOT_ID))) +
     (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE)), SLOT_ALIGN_SIZE);
   if (used == siz) {
-    p = (SLOT_ID *)realloc(arr ? slotmap__head(arr) : 0, newsiz);
+    p = (SLOT_ID *)SLOT_REALLOC(arr, newsiz);
     x = (newsiz - (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE))) / (itemsize + sizeof(SLOT_ID));
-    memmove(p + x, p + siz, (used * itemsize) + (sizeof(SLOT_ID) * 3));
+    memmove(p + (x + 3 + SLOT_EXT_SIZE), p + (siz + 3 + SLOT_EXT_SIZE), used * itemsize);
 
-    p += x;
-    *ary = (uint8_t *)(p + 3 + SLOT_EXT_SIZE);
-    p[0] = x;
+    *ary = (uint8_t *)p;
+    p[0 + SLOT_EXT_SIZE] = x;
   } else {
-    p = (SLOT_ID *)slotmap__meta(arr);
+    p = (SLOT_ID *)arr;
   }
 
   //
@@ -168,10 +169,11 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   // 
   if (p) {
     if (!arr) {
-      p[1] = p[2] = 0;
+      p[1 + SLOT_EXT_SIZE] = p[2 + SLOT_EXT_SIZE] = 0;
     }
-    *idp = x = p[1]++;
-    return *ary + (x * itemsize);
+    *idp = x = p[1 + SLOT_EXT_SIZE]++;
+    arr = *ary;
+    return slotmap__head(arr) + (x * itemsize);
   }
 
   *idp = SLOTMAP_NONE_ID;

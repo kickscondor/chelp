@@ -16,13 +16,15 @@
 
 #include "slotbase.h"
 
-#define slotlist_free(a)         ((a) ? free(slotlist__sbraw(a)),0 : 0)
+#define slotlist_free(a)         ((a) ? free(slotlist_ptr(a)),0 : 0)
 #define slotlist_push(a,v)       (slotlist__sbmaybegrow(a,1), (a)[slotlist__sbn(a)++] = (v))
 #define slotlist_count(a)        ((a) ? slotlist__sbn(a) : 0)
 #define slotlist_add(a,n)        (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n), &(a)[slotlist__sbn(a)-(n)])
 #define slotlist_last(a)         ((a)[slotlist__sbn(a)-1])
+#define slotlist_ptr(a)          ((SLOT_ID *) (a) - (2 + SLOT_EXT_SIZE))
+#define slotlist_array(a)        ((SLOT_ID *) (a) + (2 + SLOT_EXT_SIZE))
 
-#define slotlist__sbraw(a) ((SLOT_ID *) (a) - (2 + SLOT_EXT_SIZE))
+#define slotlist__sbraw(a) ((SLOT_ID *) (a) - 2))
 #define slotlist__sbm(a)   slotlist__sbraw(a)[0]
 #define slotlist__sbn(a)   slotlist__sbraw(a)[1]
 
@@ -34,14 +36,17 @@
 
 static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 {
-   SLOT_ID needed = SLOT_FLEX_SIZE(slotlist_sb_count(arr) + increment);
-   needed = SLOT_ALIGN(needed, SLOT_ALIGN_SIZE);
-   SLOT_ID *p = (SLOT_ID *)realloc(arr ? slotlist__sbraw(arr) : 0,
-     (itemsize * needed) + (sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE)));
+   SLOT_ID needed = slotlist_count(arr), newsize = slotlist__sbm(arr);
+   while (newsize < needed)
+     newsize = SLOT_FLEX_SIZE(newsize);
+   newsize = SLOT_ALIGN(newsize, SLOT_ALIGN_SIZE);
+
+   SLOT_ID *p = (SLOT_ID *)SLOT_REALLOC(arr ? slotlist_ptr(arr) : 0,
+     ((size_t)itemsize * newsize) + (sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE)));
    if (p) {
       if (!arr)
-         p[1] = 0;
-      p[0] = m;
+         p[1 + SLOT_EXT_SIZE] = 0;
+      p[0 + SLOT_EXT_SIZE] = m;
       return p+2+SLOT_EXT_SIZE;
    } else {
       return (void *) ((2 + SLOT_EXT_SIZE)*sizeof(SLOT_ID)); // try to force a NULL pointer exception later
