@@ -1,8 +1,6 @@
 #
 # ccbuild.mk
 #
-# © 2016 Kicks Condor
-# 
 # The goal here is to allow native and some degree of cross-compilation with a
 # simple Makefile. The odd platform here is clearly iOS - the binary is a combination
 # of multiple architectures and currently you can only build all of them from Mac OS X.
@@ -45,6 +43,12 @@
 # This is all the documentation for now. This Makefile is quite brief - individual variables
 # and build tasks can be found below.
 #
+# LICENSE
+#
+#   This software is dual-licensed to the public domain and under the following
+#   license: you are granted a perpetual, irrevocable license to copy, modify,
+#   publish, and distribute this file as you see fit.
+
 .SUFFIXES: .g .c .o
 
 include ~/.ccbuild
