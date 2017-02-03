@@ -55,7 +55,7 @@
 // Gets the 0-based array index of an element in the slot map by its 'id'. (You cannot loop through
 // a slot map in this order, though. There will be holes with invalid data.)
 // Returns: A SLOT_ID.
-#define slotmap_at(id)        ((id) & SLOTMAP_MAX_ID)
+#define slotmap_index(id)        ((id) & SLOTMAP_MAX_ID)
 
 // Free an entire slot map 'a' from memory. This doesn't just free the slot map metadata -
 // everything is freed. Elements are part of the contiguous block of the slot map.
@@ -86,8 +86,8 @@
 
 // Get a pointer to an element by supplying the slot map 'a' that contains it and its SLOT_ID 'id'.
 // Returns: A pointer to the element or NULL if the element is not found.
-#define slotmap_get(a,id)     (!a ? 0 : ({ \
-  SLOT_ID __id__ = slotmap_at(id); \
+#define slotmap_at(a,id)     (!a ? 0 : ({ \
+  SLOT_ID __id__ = slotmap_index(id); \
   __typeof__(a) item = NULL; \
   if (__id__ < slotmap__use(a)) { \
     item = slotmap_array(a) + __id__; \
@@ -101,7 +101,7 @@
 // provided for final access to the element - please do not store the pointer, it is useless
 // to any subsequent calls.
 #define slotmap_remove(a,id)  (!a ? 0 : ({ \
-  __typeof__(a) item = slotmap_get(a,id); \
+  __typeof__(a) item = slotmap_at(a,id); \
   if (item) { \
     item->version++; \
     slotmap__freelist(a)[slotmap__frl(a)++] = slotmap__id(id, item->version); \
@@ -115,7 +115,7 @@
 //
 // internal macros
 //
-#define slotmap__id(index,v)  (slotmap_at(index) | ((SLOT_ID)(v) << 24))
+#define slotmap__id(index,v)  (slotmap_index(index) | ((SLOT_ID)(v) << 24))
 #define slotmap__freelist(a)  (((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE))
 #define slotmap__siz(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 0]
 #define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
@@ -142,7 +142,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     x = slotmap__frl(arr);
     if (x) {
       *idp = x = slotmap__freelist(arr)[--slotmap__frl(arr)];
-      return slotmap_array(arr) + (slotmap_at(x) * itemsize);
+      return slotmap_array(arr) + (slotmap_index(x) * itemsize);
     } else {
       siz = slotmap__siz(arr);
       used = slotmap__use(arr);

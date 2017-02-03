@@ -16,15 +16,19 @@
 
 #include "slotbase.h"
 
-#define slotlist_free(a)         ((a) ? free(slotlist_ptr(a)),0 : 0)
-#define slotlist_push(a,v)       (slotlist__sbmaybegrow(a,1), (a)[slotlist__sbn(a)++] = (v))
+#define slotlist_free(a)         ((a) ? free(a),0 : 0)
+#define slotlist_push(a,v)       (slotlist__sbmaybegrow(a,1), slotlist_at(a, slotlist__sbn(a)++) = (v))
+#define slotlist_used(a)         ((a) ? slotlist__sbm(a) : 0)
 #define slotlist_count(a)        ((a) ? slotlist__sbn(a) : 0)
-#define slotlist_add(a,n)        (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n), &(a)[slotlist__sbn(a)-(n)])
-#define slotlist_last(a)         ((a)[slotlist__sbn(a)-1])
-#define slotlist_ptr(a)          ((SLOT_ID *) (a) - (2 + SLOT_EXT_SIZE))
-#define slotlist_array(a)        ((SLOT_ID *) (a) + (2 + SLOT_EXT_SIZE))
+#define slotlist_add(a,n)        (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n), &slotlist_at(a, slotlist__sbn(a)-(n)))
+#define slotlist_clear(a)        slotlist__sbn(a) = 0
+#define slotlist_last(a)         slotlist_at(a, slotlist__sbn(a)-1)
 
-#define slotlist__sbraw(a) ((SLOT_ID *) (a) - 2))
+#define slotlist_array(a)        ((__typeof__(a))((SLOT_ID *) (a) + (2 + SLOT_EXT_SIZE)))
+#define slotlist_at(a,n)         slotlist_array(a)[n]
+#define slotlist_ptr(a)          ((SLOT_ID *) (a) - (2 + SLOT_EXT_SIZE))
+
+#define slotlist__sbraw(a) ((SLOT_ID *) (a))
 #define slotlist__sbm(a)   slotlist__sbraw(a)[0]
 #define slotlist__sbn(a)   slotlist__sbraw(a)[1]
 
@@ -36,20 +40,23 @@
 
 static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 {
-   SLOT_ID needed = slotlist_count(arr), newsize = slotlist__sbm(arr);
-   while (newsize < needed)
-     newsize = SLOT_FLEX_SIZE(newsize);
-   newsize = SLOT_ALIGN(newsize, SLOT_ALIGN_SIZE);
+  size_t newsize = 0, newitems = slotlist_used(arr);
+  size_t needed = slotlist_count(arr) + increment +
+    SLOT_DIV_ALIGN(sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE), itemsize);
+  while (newitems < needed)
+    newitems = SLOT_FLEX_SIZE(newitems);
 
-   SLOT_ID *p = (SLOT_ID *)SLOT_REALLOC(arr ? slotlist_ptr(arr) : 0,
-     ((size_t)itemsize * newsize) + (sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE)));
-   if (p) {
+  newsize = SLOT_ALIGN(newitems * itemsize, SLOT_ALIGN_SIZE);
+  if (newitems < UINT32_MAX) {
+    SLOT_ID *p = (SLOT_ID *)SLOT_REALLOC(arr, newsize);
+    if (p) {
       if (!arr)
-         p[1 + SLOT_EXT_SIZE] = 0;
-      p[0 + SLOT_EXT_SIZE] = m;
-      return p+2+SLOT_EXT_SIZE;
-   } else {
-      return (void *) ((2 + SLOT_EXT_SIZE)*sizeof(SLOT_ID)); // try to force a NULL pointer exception later
-   }
+        p[1 + SLOT_EXT_SIZE] = 0;
+      p[0 + SLOT_EXT_SIZE] = newitems;
+      return p;
+    }
+  }
+
+  return NULL;
 }
 #endif
