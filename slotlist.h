@@ -34,7 +34,7 @@
 #define slotlist__sbm(a)   slotlist__sbraw(a)[0 + SLOT_EXT_SIZE]
 #define slotlist__sbn(a)   slotlist__sbraw(a)[1 + SLOT_EXT_SIZE]
 
-#define slotlist__sbneedgrow(a,n)  ((a)==0 || slotlist__sbn(a)+(n) >= slotlist__sbm(a))
+#define slotlist__sbneedgrow(a,n)  ((a)==0 || slotlist__sbn(a)+(n) > slotlist__sbm(a))
 #define slotlist__sbmaybegrow(a,n) (slotlist__sbneedgrow(a,(n)) ? slotlist__sbgrow(a,n) : 0)
 #define slotlist__sbgrow(a,n)      ((a) = slotlist__sbgrowf((a), (n), sizeof(*(a))))
 
@@ -49,8 +49,10 @@ static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
     newitems = SLOT_FLEX_SIZE(newitems);
 
   newsize = SLOT_ALIGN(newitems * itemsize, SLOT_ALIGN_SIZE);
+  newitems = newsize / itemsize;
   if (newitems < SLOTLIST_MAX) {
     SLOT_ID *p = (SLOT_ID *)SLOT_REALLOC(arr, newsize);
+    newitems -= 2 + SLOT_EXT_SIZE;
     if (p) {
       if (!arr)
         p[1 + SLOT_EXT_SIZE] = 0;
