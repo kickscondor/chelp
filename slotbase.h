@@ -45,6 +45,11 @@
 #define SLOT_EXT_SIZE 0
 #endif
 
+// The 'none' ID.
+#ifndef SLOT_NONE_ID
+#define SLOT_NONE_ID  UINT32_MAX
+#endif
+
 // IDs in slot lists and slot maps are 32-bit unsigned integers.
 typedef uint32_t SLOT_ID;
 

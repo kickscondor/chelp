@@ -49,9 +49,6 @@
 // The maximum element ID for a slot map. This is a hard limit of 16 million.
 #define SLOTMAP_MAX_ID   0xFFFFFF
 
-// The 'none' ID.
-#define SLOTMAP_NONE_ID  UINT32_MAX
-
 // Gets the 0-based array index of an element in the slot map by its 'id'. (You cannot loop through
 // a slot map in this order, though. There will be holes with invalid data.)
 // Returns: A SLOT_ID.
@@ -70,6 +67,10 @@
 // A count of how many active entries there are with valid data in the slot map 'a'.
 // Returns: A uint32_t.
 #define slotmap_count(a)      ((a) ? slotmap__use(a) - slotmap__frl(a) : 0)
+
+// A count of how many entries the slot map 'a' already has allocated space for.
+// Returns: A uint32_t.
+#define slotmap_allocated(a)  ((a) ? slotmap__siz(a) : 0)
 
 // Add a new entry in the slot map 'a' and set SLOT_ID variable 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
@@ -178,7 +179,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     return slotmap_array(arr) + (x * itemsize);
   }
 
-  *idp = SLOTMAP_NONE_ID;
+  *idp = SLOT_NONE_ID;
   return NULL;
 }
 
