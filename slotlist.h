@@ -31,8 +31,8 @@
 #define slotlist_ptr(a)          ((SLOT_ID *) (a) - (2 + SLOT_EXT_SIZE))
 
 #define slotlist__sbraw(a) ((SLOT_ID *) (a))
-#define slotlist__sbm(a)   slotlist__sbraw(a)[0]
-#define slotlist__sbn(a)   slotlist__sbraw(a)[1]
+#define slotlist__sbm(a)   slotlist__sbraw(a)[0 + SLOT_EXT_SIZE]
+#define slotlist__sbn(a)   slotlist__sbraw(a)[1 + SLOT_EXT_SIZE]
 
 #define slotlist__sbneedgrow(a,n)  ((a)==0 || slotlist__sbn(a)+(n) >= slotlist__sbm(a))
 #define slotlist__sbmaybegrow(a,n) (slotlist__sbneedgrow(a,(n)) ? slotlist__sbgrow(a,n) : 0)
