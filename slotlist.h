@@ -39,9 +39,14 @@
 #define slotlist__sbmaybegrow(a,n) (slotlist__sbneedgrow(a,(n)) ? slotlist__sbgrow(a,n) : 0)
 #define slotlist__sbgrow(a,n)      ((a) = slotlist__sbgrowf((a), (n), sizeof(*(a))))
 
+void *
+slotlist__sbgrowf(void *, SLOT_ID, size_t);
+
+#ifdef SLOTLIST_IMPLEMENTATION
 #include <stdlib.h>
 
-static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
+void *
+slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 {
   size_t newsize = 0,
          newitems = slotlist_allocated(arr),
@@ -64,4 +69,6 @@ static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 
   return NULL;
 }
+#endif
+
 #endif
