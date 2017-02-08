@@ -23,6 +23,7 @@
 #define slotlist_allocated(a)    ((a) ? slotlist__sbm(a) : 0)
 #define slotlist_count(a)        ((a) ? slotlist__sbn(a) : 0)
 #define slotlist_add(a,n)        (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n), &slotlist_at(a, slotlist__sbn(a)-(n)))
+#define slotlist_truncate(a,n)   (slotlist__sbn(a)-=(n))
 #define slotlist_clear(a)        slotlist__sbn(a) = 0
 #define slotlist_last(a)         slotlist_at(a, slotlist__sbn(a)-1)
 
@@ -42,17 +43,17 @@
 
 static void * slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 {
-  size_t newsize = 0, newitems = slotlist_allocated(arr);
-  size_t needed = slotlist_count(arr) + increment +
-    SLOT_DIV_ALIGN(sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE), itemsize);
+  size_t newsize = 0,
+         newitems = slotlist_allocated(arr),
+         extsize = sizeof(SLOT_ID) * (2 + SLOT_EXT_SIZE),
+         needed = slotlist_count(arr) + increment + SLOT_DIV_ALIGN(extsize, itemsize);
   while (newitems < needed)
     newitems = SLOT_FLEX_SIZE(newitems);
 
   newsize = SLOT_ALIGN(newitems * itemsize, SLOT_ALIGN_SIZE);
-  newitems = newsize / itemsize;
+  newitems = (newsize - extsize) / itemsize;
   if (newitems < SLOTLIST_MAX) {
     SLOT_ID *p = (SLOT_ID *)SLOT_REALLOC(arr, newsize);
-    newitems -= 2 + SLOT_EXT_SIZE;
     if (p) {
       if (!arr)
         p[1 + SLOT_EXT_SIZE] = 0;
