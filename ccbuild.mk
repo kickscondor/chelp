@@ -136,7 +136,7 @@ endif
 ifeq ($(DEBUG), 1)
 	CFLAGS += -g -D_DEBUG
 else
-	CFLAGS += -O2
+	CFLAGS += -Os
 endif
 
 OUTLIB ?= $(OUTDIR)/lib/lib$(NAME).a
