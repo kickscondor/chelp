@@ -209,7 +209,7 @@ $(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
 	@$(ECHO) COPY include
 	@cp -r include/* $(OUTDIR)/include
 	@$(ECHO) COPY platforms/$(PLATFORM)/include
-	@cp -r platforms/$(PLATFORM)/include/* $(OUTDIR)/include
+	@-cp -r platforms/$(PLATFORM)/include/* $(OUTDIR)/include
 
 todo:
 	@grep -rInso 'TODO: \(.\+\)' core include doc
