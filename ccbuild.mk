@@ -212,7 +212,7 @@ $(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
 	@-cp -r platforms/$(PLATFORM)/include/* $(OUTDIR)/include
 
 todo:
-	@grep -rInso 'TODO: \(.\+\)' core include doc
+	@grep -rInso 'TODO: \(.\+\)' core include platforms test
 
 cloc:
 	@cloc core include platforms test
