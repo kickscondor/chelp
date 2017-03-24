@@ -111,7 +111,8 @@ ifeq ($(PLATFORM), mac)
 endif
 
 ifeq ($(PLATFORM), linux)
-	CFLAGS += `pkg-config --cflags glfw3` \
+	CFLAGS += -D_GNU_SOURCE \
+	          `pkg-config --cflags glfw3` \
 						`pkg-config --cflags pangoft2` \
 						`curl-config --cflags`
 	LDFLAGS += `pkg-config --libs glfw3` \
