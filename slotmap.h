@@ -8,7 +8,7 @@
 //
 // If you're going to redefine the base constants, don't use the macros to access different types
 // of slot maps in the same file. Setup functions to wrap the macros for that slot map.
-// 
+//
 // INTERNALS
 //
 // So basically, the layout looks like this:
@@ -128,7 +128,7 @@
 //
 // Makes room for a new element.
 // Returns: A pointer to the new object or NULL if no further objects could be created.
-// 
+//
 static uint8_t *
 slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
 {
@@ -153,7 +153,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
 
   //
   // Allocate additional space
-  // 
+  //
   newsiz = SLOT_ALIGN(
     (SLOT_FLEX_SIZE(siz) * (itemsize + sizeof(SLOT_ID))) +
     (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE)), SLOT_ALIGN_SIZE);
@@ -170,7 +170,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
 
   //
   // Expand the array by one element and give back an ID.
-  // 
+  //
   if (p) {
     if (!arr) {
       p[1 + SLOT_EXT_SIZE] = p[2 + SLOT_EXT_SIZE] = 0;
