@@ -18,6 +18,7 @@
 
 #define SLOTLIST_MAX             UINT32_MAX
 
+#define slotlist_id(a,v)         (v - slotlist_array(a))
 #define slotlist_free(a)         ((a) ? free(a),0 : 0)
 #define slotlist_push(a,v)       (slotlist__sbmaybegrow(a,1), slotlist_at(a, slotlist__sbn(a)++) = (v))
 #define slotlist_allocated(a)    ((a) ? slotlist__sbm(a) : 0)
