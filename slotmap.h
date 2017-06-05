@@ -35,6 +35,11 @@
 // * Keep memory low? I don't know - there's a 4 byte overhead on each entry - so maybe this
 //   is bogus.
 //
+// TODO: Defragment the slotmap. What I want to do with this is to make the freelist
+// only as big as the difference between the last allocation size and the new
+// allocation size. And once the freelist fills completely, then I'll defrag the
+// entire list and empty the freelist.
+//
 // LICENSE
 //
 //   This software is dual-licensed to the public domain and under the following
