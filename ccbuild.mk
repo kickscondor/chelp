@@ -216,7 +216,7 @@ todo:
 	@grep -rInso 'TODO: \(.\+\)' core include platforms test
 
 cloc:
-	@cloc core include platforms test
+	@cloc core include platforms
 
 tarball: include/$(NAME)/version.h core/syntax.c
 	mkdir -p pkg
