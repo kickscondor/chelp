@@ -54,6 +54,8 @@
 include ~/.ccbuild
 
 PREFIX = /usr/local
+LIB = $(PREFIX)/lib/$(NAME)
+BIN = $(PREFIX)/bin
 
 ifeq ($(PLATFORM), android)
 	TOOLCHAIN ?= "$(ANDROIDNDK)/toolchains/$(ARCH)-linux-androideabi-4.9/prebuilt/darwin-x86_64/bin/$(ARCH)-linux-androideabi-"
@@ -153,6 +155,8 @@ config:
 	@$(ECHO) "#define $(DEFPREFIX)_DEBUG    $(DEBUG)"
 	@$(ECHO) "#define $(DEFPREFIX)_MAKE     \"$(MAKE)\""
 	@$(ECHO) "#define $(DEFPREFIX)_PREFIX   \"$(PREFIX)\""
+	@$(ECHO) "#define $(DEFPREFIX)_LIB      \"$(LIB)\""
+	@$(ECHO) "#define $(DEFPREFIX)_BIN      \"$(BIN)\""
 	@$(ECHO)
 	@$(ECHO) "#define $(DEFPREFIX)_HOST     \"$(HOST)\""
 	@$(ECHO) "#define $(DEFPREFIX)_PLATFORM \"$(PLATFORM)\""
