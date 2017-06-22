@@ -51,6 +51,8 @@
 
 .SUFFIXES: .g .c .o
 
+SHELL := /bin/bash
+
 include ~/.ccbuild
 
 PREFIX = /usr/local
