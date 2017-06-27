@@ -95,11 +95,6 @@ struct Ch_SlotTableItem {
   item == NULL ? NULL : (__typeof__(a))item->data; \
 }))
 
-#define slottable_at(a, id) (!(a) ? NULL : ({ \
-  struct Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
-  item->hash == SLOT_NONE_ID ? NULL : (__typeof__(a))item->data; \
-}))
-
 // Remove an item from the slot table 'a' that matches the uint32_t 'hash' and
 // the 'key'. The key in the slot table item is compared with 'key' using the
 // 'cmp' function. Items are not freed, but only marked for removal. Items will
@@ -121,6 +116,11 @@ struct Ch_SlotTableItem {
 // Get a pointer to an element by supplying the slot table 'a' that contains it and its
 // actual ID (not hash). Use slotmap_find to use the hash to lookup.
 // Returns: A pointer to the element or NULL if the element is not found.
+#define slottable_at_id(a, id) (!(a) ? NULL : ({ \
+  struct Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
+  item->hash == SLOT_NONE_ID ? NULL : (__typeof__(a))item->data; \
+}))
+
 #define slottable__item(a, id, sz) slottable__data_item((uint8_t *)slottable__data(a), id, sz)
 #define slottable__data_item(data, id, sz) ((struct Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(struct Ch_SlotTableItem)))))
 
