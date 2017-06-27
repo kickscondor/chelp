@@ -20,17 +20,6 @@
 // A four-byte 'SLOT_ID next' and a four-byte 'SLOT_ID hash' is also added to the end of every entry.
 // This means that every entry in the slot table has a 12-byte overhead.
 //
-// INTERNALS
-//
-// The layout here is:
-//
-//   uint32_t allocated_entries
-//   uint32_t used_entries
-//   uint32_t active_entries
-//   uint32_t next_free_entry
-//   uint32_t[allocated_entries] indices
-//   (user_struct + SLOT_ID)[allocated_entries] items
-//
 #ifndef SLOTTABLE_H
 #define SLOTTABLE_H
 
@@ -54,6 +43,10 @@ struct Ch_SlotTableItem {
 #define SLOT_DOUBLE_SIZE(n) (!(n) ? 8 : ((n) * 2))
 #endif
 
+#define slottable__size(a,itemsize) \
+  (((a) * (itemsize + sizeof(SLOT_ID) + sizeof(struct Ch_SlotTableItem))) + \
+    sizeof(struct Ch_SlotTable))
+#define slottable_mem_usage(a)  (slottable__size(slottable_allocated(a), sizeof(*(a))))
 // A count of how many entries in the slot table 'a' have been used in the allocation block.
 // Some of these may be deleted already, however.
 // Returns: A uint32_t.
@@ -89,17 +82,22 @@ struct Ch_SlotTableItem {
 // Returns: A pointer to the slot table item's data or NULL if no item is found.
 #define slottable_find(a, hsh, id, cmp, key) (!(a) ? (id = SLOT_NONE_ID, NULL) : ({ \
   struct Ch_SlotTable *__tblf__ = (struct Ch_SlotTable *)a; \
-  uint32_t __idx__ = slottable__fix_hash(hsh) & (__tblf__->allocated - 1); \
-  __typeof__(a) data = NULL; \
+  uint32_t __hsh__ = slottable__fix_hash(hsh); \
+  uint32_t __idx__ = __hsh__ & (__tblf__->allocated - 1); \
+  uint8_t *items = (uint8_t *)slottable__data(a); \
   id = __tblf__->index[__idx__]; \
-  while (SLOT_NONE_ID != id) { \
-    struct Ch_SlotTableItem *item = slottable__item(__tblf__, id, sizeof(*(a))); \
-    data = (__typeof__(a))item->data; \
-    if (cmp(key, data) == 0) { break; } \
-    data = NULL; \
-    id = item->next; \
+  struct Ch_SlotTableItem *item = NULL; \
+  while (SLOT_NONE_ID != id && ({ \
+    item = slottable__data_item(items, id, sizeof(*(a))); \
+    __hsh__ != item->hash || cmp(key, (__typeof__(a))item->data) != 0;})) { \
+      id = item->next; \
   } \
-  data; \
+  item == NULL ? NULL : (__typeof__(a))item->data; \
+}))
+
+#define slottable_at(a, id) (!(a) ? NULL : ({ \
+  struct Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
+  item->hash == SLOT_NONE_ID ? NULL : (__typeof__(a))item->data; \
 }))
 
 // Remove an item from the slot table 'a' that matches the uint32_t 'hash' and
@@ -123,9 +121,13 @@ struct Ch_SlotTableItem {
 // Get a pointer to an element by supplying the slot table 'a' that contains it and its
 // actual ID (not hash). Use slotmap_find to use the hash to lookup.
 // Returns: A pointer to the element or NULL if the element is not found.
-#define slottable__item(a, id, sz) ((struct Ch_SlotTableItem *)(((uint8_t *)slottable__data(a)) + (id * (sz + sizeof(struct Ch_SlotTableItem)))))
+#define slottable__item(a, id, sz) slottable__data_item((uint8_t *)slottable__data(a), id, sz)
+#define slottable__data_item(data, id, sz) ((struct Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(struct Ch_SlotTableItem)))))
 
-#define slottable__fix_hash(hsh) (hsh == SLOT_NONE_ID ? SLOT_NONE_ID - 1 : hsh)
+#define slottable__fix_hash(hsh) ({ \
+  __typeof__(hsh) __hsh__ = hsh; \
+  __hsh__ == SLOT_NONE_ID ? SLOT_NONE_ID - 1 : __hsh__; \
+})
 
 #define slottable__add_hash(a, id, item) ({ \
   uint32_t __idx__ = item->hash & ((a)->allocated - 1); \
@@ -134,7 +136,7 @@ struct Ch_SlotTableItem {
 })
 
 #define slottable__data(a) ({ \
-  struct Ch_SlotTable *__tbl__ = (struct Ch_SlotTable *)a; \
+  struct Ch_SlotTable *__tbl__ = (struct Ch_SlotTable *)(a); \
   __tbl__->index + __tbl__->allocated; \
 })
 
@@ -174,31 +176,34 @@ slottable__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
   //
   if (used == siz) {
     newsiz = SLOT_DOUBLE_SIZE(siz);
-    struct Ch_SlotTable *newtbl = (struct Ch_SlotTable *)malloc(
-      (SLOT_DOUBLE_SIZE(siz) * (itemsize + sizeof(SLOT_ID) + sizeof(struct Ch_SlotTableItem))) +
-      sizeof(struct Ch_SlotTable));
+    struct Ch_SlotTable *newtbl = (struct Ch_SlotTable *)malloc(slottable__size(newsiz, itemsize));
     newtbl->allocated = newsiz;
 
     //
     // Copy and rehash the table, removing holes along the way.
     //
     memset(newtbl->index, SLOT_NONE_ID, sizeof(SLOT_ID) * newsiz);
-    uint32_t newid = 0;
+    newtbl->next_free = SLOT_NONE_ID;
+    uint32_t newid = 0, newactive = 0;
     if (tbl) {
       for (uint32_t i = 0; i < used; i++) {
         struct Ch_SlotTableItem *item = slottable__item(tbl, i, itemsize);
         if (item->hash != SLOT_NONE_ID) {
-          slottable__add_hash(tbl, newid, item);
+          slottable__add_hash(newtbl, newid, item);
+          newactive++;
         } else if (!(flags & SLOTTABLE_FIXED_ID)) {
           continue;
         }
-        *slottable__item(newtbl, newid, itemsize) = *item;
+        memcpy(slottable__item(newtbl, newid, itemsize), item, itemsize + sizeof(struct Ch_SlotTableItem));
         newid++;
+      }
+      if (flags & SLOTTABLE_FIXED_ID) {
+        newtbl->next_free = tbl->next_free;
       }
       free(tbl);
     }
-    newtbl->used = newtbl->active = newid;
-    newtbl->next_free = SLOT_NONE_ID;
+    newtbl->used = newid;
+    newtbl->active = newactive;
 
     *ary = (uint8_t *)(tbl = newtbl);
   }
