@@ -39,6 +39,13 @@ struct Ch_SlotTableItem {
   uint8_t data[0];
 };
 
+static inline uint32_t slottable_str_hash(const char *s)
+{
+  uint32_t h = (uint32_t)*s;
+  if (h) for (++s ; *s; ++s) h = (h << 5) - h + (uint32_t)*s;
+  return h;
+}
+
 #ifndef SLOT_DOUBLE_SIZE
 #define SLOT_DOUBLE_SIZE(n) (!(n) ? 8 : ((n) * 2))
 #endif
