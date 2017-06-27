@@ -91,6 +91,7 @@ struct Ch_SlotTableItem {
     item = slottable__data_item(items, id, sizeof(*(a))); \
     __hsh__ != item->hash || cmp(key, (__typeof__(a))item->data) != 0;})) { \
       id = item->next; \
+      item = NULL; \
   } \
   item == NULL ? NULL : (__typeof__(a))item->data; \
 }))
