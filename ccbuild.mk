@@ -202,10 +202,10 @@ $(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
 	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
 	@mv $(OUTBIN) $(OUTDIR)/bin
-	@-mv $(NAME).* $(OUTDIR)
+	@-mv $(NAME).* $(OUTDIR)/bin
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
-		$(STRIP) $(NAME); \
+		$(STRIP) $(OUTDIR)/bin/$(OUTBIN); \
 	fi
 
 $(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
