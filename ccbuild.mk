@@ -102,6 +102,13 @@ LIBS = -lm
 VALGRIND = valgrind --tool=memcheck --leak-check=full --show-reachable=yes --num-callers=20 --track-fds=yes
 MEMCHECK_CMD := $(shell $(ECHO) "$(MEMCHECK)" | sed "s/0//; s/1/$(VALGRIND)/")
 
+ifeq ($(PLATFORM), emscripten)
+	AR = emar
+	CC = emcc
+	CFLAGS += -s WASM=1
+	OUTBIN ?= $(NAME).html
+endif
+
 ifeq ($(PLATFORM), android)
 	CFLAGS += -I$(NDK)/usr/include
 endif
@@ -186,13 +193,13 @@ $(OUTDIR)/%.o: $(OUTDIR)/%.c setup
 	@$(ECHO) CC $<
 	$(CC) -c $(CFLAGS) $(INCS) -o $@ $<
 
-$(OUTDIR)/lib/lib$(NAME).a: objects
+$(OUTLIB): objects
 	@$(ECHO) LINK lib$(NAME)
 	$(AR) rcs $@ $(OBJ)
 
-$(OUTDIR)/bin/$(NAME): objects
+$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
-	@$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
 	  $(STRIP) $(NAME); \

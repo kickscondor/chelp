@@ -76,8 +76,9 @@ static inline uint32_t slottable_str_hash(const char *s)
 // If the SLOTTABLE_FIXED_ID attribute is set, IDs will be kept permanent and items will not be shifted
 // around when the hashtable is resized.
 // Returns: A pointer to the new item or NULL if the slot table has reached its maximum.
-#define slottable_add(a, hsh, id, flags)     ({ \
-  struct Ch_SlotTableItem *item = slottable__make((uint8_t **)&a, sizeof(*(a)), &id, flags); \
+#define slottable_add(a, hsh, id, flags)          slottable__add(a, hsh, id, sizeof(*(a)), flags)
+#define slottable__add(a, hsh, id, sz, flags)     ({ \
+  struct Ch_SlotTableItem *item = slottable__insert((uint8_t **)&a, sz, &id, flags); \
   item->hash = slottable__fix_hash(hsh); \
   slottable__add_hash((struct Ch_SlotTable *)a, id, item); \
   (__typeof__(a))item->data; \
@@ -156,7 +157,7 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Returns: A pointer to the new object or NULL if no further objects could be created.
 //
 static struct Ch_SlotTableItem *
-slottable__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
+slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
 {
   struct Ch_SlotTable *tbl = *ary;
   SLOT_ID *p;
