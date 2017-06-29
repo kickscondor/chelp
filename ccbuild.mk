@@ -107,6 +107,7 @@ ifeq ($(PLATFORM), emscripten)
 	CC = emcc
 	CFLAGS += -s WASM=1
 	OUTBIN ?= $(NAME).html
+	STRIP = echo
 endif
 
 ifeq ($(PLATFORM), android)
@@ -202,7 +203,7 @@ $(OUTBIN): objects
 	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
-	  $(STRIP) $(NAME); \
+		$(STRIP) $(NAME); \
 	fi
 
 $(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
