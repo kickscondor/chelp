@@ -105,8 +105,8 @@ MEMCHECK_CMD := $(shell $(ECHO) "$(MEMCHECK)" | sed "s/0//; s/1/$(VALGRIND)/")
 ifeq ($(PLATFORM), emscripten)
 	AR = emar
 	CC = emcc
-	CFLAGS += -s WASM=1
-	OUTBIN ?= $(NAME).html
+	LIBS = -s WASM=1
+	OUTBIN ?= $(NAME).js
 	STRIP = echo
 endif
 
@@ -135,7 +135,7 @@ endif
 
 ifeq ($(PLATFORM), ios6)
 	ifeq ($(IOS_PLATFORM),)
-		OUTLIB = $(OUTDIR)/lib/lib$(NAME)-ios6.a
+		OUTLIB = lib$(NAME)-ios6.a
 		ARCH = universal
 	else
 		XCODE = $(shell xcode-select --print-path)
@@ -152,8 +152,8 @@ else
 	CFLAGS += -Os
 endif
 
-OUTLIB ?= $(OUTDIR)/lib/lib$(NAME).a
-OUTBIN ?= $(OUTDIR)/bin/$(NAME)
+OUTLIB ?= lib$(NAME).a
+OUTBIN ?= $(NAME)
 PKG := "$(NAME)-$(RELEASE)"
 DEFPREFIX = $(shell echo $(NAME) | tr a-z A-Z)
 
@@ -194,13 +194,15 @@ $(OUTDIR)/%.o: $(OUTDIR)/%.c setup
 	@$(ECHO) CC $<
 	$(CC) -c $(CFLAGS) $(INCS) -o $@ $<
 
-$(OUTLIB): objects
+$(OUTDIR)/lib/$(OUTLIB): objects
 	@$(ECHO) LINK lib$(NAME)
 	$(AR) rcs $@ $(OBJ)
 
-$(OUTBIN): objects
+$(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
 	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
+	@mv $(OUTBIN) $(OUTDIR)/bin
+	@-mv $(NAME).* $(OUTDIR)
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
 		$(STRIP) $(NAME); \
