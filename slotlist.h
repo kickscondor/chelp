@@ -23,7 +23,8 @@
 #define slotlist_push(a,v)       (slotlist__sbmaybegrow(a,1), slotlist_at(a, slotlist__sbn(a)++) = (v))
 #define slotlist_allocated(a)    ((a) ? slotlist__sbm(a) : 0)
 #define slotlist_count(a)        ((a) ? slotlist__sbn(a) : 0)
-#define slotlist_add(a,n)        (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n), &slotlist_at(a, slotlist__sbn(a)-(n)))
+#define slotlist_expand(a,n)     (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n))
+#define slotlist_add(a,n)        (slotlist_expand(a,n), &slotlist_at(a, slotlist__sbn(a)-(n)))
 #define slotlist_truncate(a,n)   ((a) ? (slotlist__sbn(a)-=(n),1) : 0)
 #define slotlist_clear(a)        slotlist__sbn(a) = 0
 #define slotlist_last(a)         slotlist_at(a, slotlist__sbn(a)-1)

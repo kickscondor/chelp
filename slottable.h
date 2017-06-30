@@ -25,19 +25,19 @@
 
 #include "slotbase.h"
 
-struct Ch_SlotTable {
+typedef struct {
   uint32_t allocated;
   uint32_t used;
   uint32_t active;
   SLOT_ID next_free;
   SLOT_ID index[0];
-};
+} Ch_SlotTable;
 
-struct Ch_SlotTableItem {
+typedef struct {
   uint32_t hash;
   SLOT_ID next;
   uint8_t data[0];
-};
+} Ch_SlotTableItem;
 
 static inline uint32_t slottable_str_hash(const char *s)
 {
@@ -51,21 +51,21 @@ static inline uint32_t slottable_str_hash(const char *s)
 #endif
 
 #define slottable__size(a,itemsize) \
-  (((a) * (itemsize + sizeof(SLOT_ID) + sizeof(struct Ch_SlotTableItem))) + \
-    sizeof(struct Ch_SlotTable))
+  (((a) * (itemsize + sizeof(SLOT_ID) + sizeof(Ch_SlotTableItem))) + \
+    sizeof(Ch_SlotTable))
 #define slottable_mem_usage(a)  (slottable__size(slottable_allocated(a), sizeof(*(a))))
 // A count of how many entries in the slot table 'a' have been used in the allocation block.
 // Some of these may be deleted already, however.
 // Returns: A uint32_t.
-#define slottable_used(a)       ((a) ? ((struct Ch_SlotTable *)a)->used : 0)
+#define slottable_used(a)       ((a) ? ((Ch_SlotTable *)a)->used : 0)
 
 // A count of how many active entries there are with valid data in the slot table 'a'.
 // Returns: A uint32_t.
-#define slottable_count(a)      ((a) ? ((struct Ch_SlotTable *)a)->active : 0)
+#define slottable_count(a)      ((a) ? ((Ch_SlotTable *)a)->active : 0)
 
 // A count of how many entries the slot table 'a' already has allocated space for.
 // Returns: A uint32_t.
-#define slottable_allocated(a)  ((a) ? ((struct Ch_SlotTable *)a)->allocated : 0)
+#define slottable_allocated(a)  ((a) ? ((Ch_SlotTable *)a)->allocated : 0)
 
 #define SLOTTABLE_ORDERED  1
 #define SLOTTABLE_FIXED_ID 2
@@ -78,9 +78,9 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Returns: A pointer to the new item or NULL if the slot table has reached its maximum.
 #define slottable_add(a, hsh, id, flags)          slottable__add(a, hsh, id, sizeof(*(a)), flags)
 #define slottable__add(a, hsh, id, sz, flags)     ({ \
-  struct Ch_SlotTableItem *item = slottable__insert((uint8_t **)&a, sz, &id, flags); \
+  Ch_SlotTableItem *item = slottable__insert((uint8_t **)&a, sz, &id, flags); \
   item->hash = slottable__fix_hash(hsh); \
-  slottable__add_hash((struct Ch_SlotTable *)a, id, item); \
+  slottable__add_hash((Ch_SlotTable *)a, id, item); \
   (__typeof__(a))item->data; \
 })
 
@@ -89,12 +89,12 @@ static inline uint32_t slottable_str_hash(const char *s)
 // If a matching item is found, the 'id' is set to the item's ID in the slot table.
 // Returns: A pointer to the slot table item's data or NULL if no item is found.
 #define slottable_find(a, hsh, id, cmp, key) (!(a) ? (id = SLOT_NONE_ID, NULL) : ({ \
-  struct Ch_SlotTable *__tblf__ = (struct Ch_SlotTable *)a; \
+  Ch_SlotTable *__tblf__ = (Ch_SlotTable *)a; \
   uint32_t __hsh__ = slottable__fix_hash(hsh); \
   uint32_t __idx__ = __hsh__ & (__tblf__->allocated - 1); \
   uint8_t *items = (uint8_t *)slottable__data(a); \
   id = __tblf__->index[__idx__]; \
-  struct Ch_SlotTableItem *item = NULL; \
+  Ch_SlotTableItem *item = NULL; \
   while (SLOT_NONE_ID != id && ({ \
     item = slottable__data_item(items, id, sizeof(*(a))); \
     __hsh__ != item->hash || cmp(key, (__typeof__(a))item->data) != 0;})) { \
@@ -112,9 +112,9 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Returns: A pointer to the slot table item's data or NULL if no item is found.
 #define slottable_remove(a, hsh, cmp, key) (!(a) ? NULL : ({ \
   SLOT_ID __id__ = SLOT_NONE_ID; \
-  struct Ch_SlotTable *__tbl__ = (struct Ch_SlotTable *)a; \
+  Ch_SlotTable *__tbl__ = (Ch_SlotTable *)a; \
   __typeof__(a) data = slottable_find(a, hsh, __id__, cmp, key); \
-  struct Ch_SlotTableItem *item = slottable__item(a, __id__, sizeof(*(a))); \
+  Ch_SlotTableItem *item = slottable__item(a, __id__, sizeof(*(a))); \
   item->hash = SLOT_NONE_ID; \
   item->next = __tbl__->next_free; \
   __tbl__->next_free = __id__; \
@@ -126,12 +126,12 @@ static inline uint32_t slottable_str_hash(const char *s)
 // actual ID (not hash). Use slotmap_find to use the hash to lookup.
 // Returns: A pointer to the element or NULL if the element is not found.
 #define slottable_at_id(a, id) (!(a) ? NULL : ({ \
-  struct Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
+  Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
   item->hash == SLOT_NONE_ID ? NULL : (__typeof__(a))item->data; \
 }))
 
 #define slottable__item(a, id, sz) slottable__data_item((uint8_t *)slottable__data(a), id, sz)
-#define slottable__data_item(data, id, sz) ((struct Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(struct Ch_SlotTableItem)))))
+#define slottable__data_item(data, id, sz) ((Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(Ch_SlotTableItem)))))
 
 #define slottable__fix_hash(hsh) ({ \
   __typeof__(hsh) __hsh__ = hsh; \
@@ -145,7 +145,7 @@ static inline uint32_t slottable_str_hash(const char *s)
 })
 
 #define slottable__data(a) ({ \
-  struct Ch_SlotTable *__tbl__ = (struct Ch_SlotTable *)(a); \
+  Ch_SlotTable *__tbl__ = (Ch_SlotTable *)(a); \
   __tbl__->index + __tbl__->allocated; \
 })
 
@@ -156,11 +156,10 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Makes room for a new element.
 // Returns: A pointer to the new object or NULL if no further objects could be created.
 //
-static struct Ch_SlotTableItem *
+static Ch_SlotTableItem *
 slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
 {
-  struct Ch_SlotTable *tbl = *ary;
-  SLOT_ID *p;
+  Ch_SlotTable *tbl = (Ch_SlotTable *)*ary;
   SLOT_ID x;
   size_t used = 0, siz = 0, newsiz = 0;
 
@@ -170,7 +169,7 @@ slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
   if (tbl) {
     x = tbl->next_free;
     if (x != SLOT_NONE_ID && (flags & SLOTTABLE_ORDERED)) {
-      struct Ch_SlotTableItem *item = slottable__item(tbl, x, itemsize);
+      Ch_SlotTableItem *item = slottable__item(tbl, x, itemsize);
       tbl->next_free = item->next;
       *idp = x;
       return item;
@@ -185,7 +184,7 @@ slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
   //
   if (used == siz) {
     newsiz = SLOT_DOUBLE_SIZE(siz);
-    struct Ch_SlotTable *newtbl = (struct Ch_SlotTable *)malloc(slottable__size(newsiz, itemsize));
+    Ch_SlotTable *newtbl = (Ch_SlotTable *)malloc(slottable__size(newsiz, itemsize));
     newtbl->allocated = newsiz;
 
     //
@@ -196,14 +195,14 @@ slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
     uint32_t newid = 0, newactive = 0;
     if (tbl) {
       for (uint32_t i = 0; i < used; i++) {
-        struct Ch_SlotTableItem *item = slottable__item(tbl, i, itemsize);
+        Ch_SlotTableItem *item = slottable__item(tbl, i, itemsize);
         if (item->hash != SLOT_NONE_ID) {
           slottable__add_hash(newtbl, newid, item);
           newactive++;
         } else if (!(flags & SLOTTABLE_FIXED_ID)) {
           continue;
         }
-        memcpy(slottable__item(newtbl, newid, itemsize), item, itemsize + sizeof(struct Ch_SlotTableItem));
+        memcpy(slottable__item(newtbl, newid, itemsize), item, itemsize + sizeof(Ch_SlotTableItem));
         newid++;
       }
       if (flags & SLOTTABLE_FIXED_ID) {

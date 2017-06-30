@@ -107,6 +107,7 @@ ifeq ($(PLATFORM), emscripten)
 	CC = emcc
 	LIBS = -s WASM=1
 	OUTBIN ?= $(NAME).js
+	OUTBINGLOB = $(NAME).*
 	STRIP = echo
 endif
 
@@ -154,6 +155,7 @@ endif
 
 OUTLIB ?= lib$(NAME).a
 OUTBIN ?= $(NAME)
+OUTBINGLOB ?= $(OUTBIN)
 PKG := "$(NAME)-$(RELEASE)"
 DEFPREFIX = $(shell echo $(NAME) | tr a-z A-Z)
 
@@ -201,8 +203,7 @@ $(OUTDIR)/lib/$(OUTLIB): objects
 $(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
 	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
-	@mv $(OUTBIN) $(OUTDIR)/bin
-	@-mv $(NAME).* $(OUTDIR)/bin
+	@cp $(OUTBINGLOB) $(OUTDIR)/bin
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
 		$(STRIP) $(OUTDIR)/bin/$(OUTBIN); \
