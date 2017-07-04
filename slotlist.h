@@ -26,7 +26,7 @@
 #define slotlist_expand(a,n)     (slotlist__sbmaybegrow(a,n), slotlist__sbn(a)+=(n))
 #define slotlist_add(a,n)        (slotlist_expand(a,n), &slotlist_at(a, slotlist__sbn(a)-(n)))
 #define slotlist_truncate(a,n)   ((a) ? (slotlist__sbn(a)-=(n),1) : 0)
-#define slotlist_clear(a)        slotlist__sbn(a) = 0
+#define slotlist_clear(a)        ((a) ? (slotlist__sbn(a)=0) : 0)
 #define slotlist_last(a)         slotlist_at(a, slotlist__sbn(a)-1)
 
 #define slotlist_array(a)        ((__typeof__(a))((SLOT_ID *) (a) + (2 + SLOT_EXT_SIZE)))
