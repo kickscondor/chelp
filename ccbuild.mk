@@ -76,6 +76,7 @@ DEBUG ?= 0
 ECHO = /bin/echo
 MAKE_S = $(MAKE) --no-print-directory -s
 MEMCHECK ?= 0
+OPENGL ?= 0
 STRIP ?= $(TOOLCHAIN)strip -x
 
 HOST := $(shell $(CC) -v 2>&1 | \
@@ -119,19 +120,21 @@ ifeq ($(PLATFORM), windows)
 	CFLAGS += -I$(TOOLCHAIN)x86_64-w64-mingw32/include
 endif
 
+ifeq ($(OPENGL), 1)
 ifeq ($(PLATFORM), mac)
 	LIBS += -framework OpenGL -framework Foundation -framework CoreText -framework CoreGraphics -lglfw
 endif
 
 ifeq ($(PLATFORM), linux)
 	CFLAGS += -D_GNU_SOURCE \
-	          `pkg-config --cflags glfw3` \
+						`pkg-config --cflags glfw3` \
 						`pkg-config --cflags pangoft2` \
 						`curl-config --cflags`
 	LDFLAGS += `pkg-config --libs glfw3` \
 						 `pkg-config --libs pangoft2` \
 						 `curl-config --libs`
 	LIBS += -lGL -lGLU -lGLEW
+endif
 endif
 
 ifeq ($(PLATFORM), ios6)
