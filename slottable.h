@@ -151,14 +151,13 @@ static inline uint32_t slottable_str_hash(const char *s)
   __tbl__->index + __tbl__->allocated; \
 })
 
-#ifndef SLOTMAP_MACROS_ONLY
 #include <string.h>
 
 //
 // Makes room for a new element.
 // Returns: A pointer to the new object or NULL if no further objects could be created.
 //
-static Ch_SlotTableItem *
+static inline Ch_SlotTableItem *
 slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
 {
   Ch_SlotTable *tbl = (Ch_SlotTable *)*ary;
@@ -230,6 +229,5 @@ slottable__insert(uint8_t **ary, size_t itemsize, SLOT_ID *idp, uint8_t flags)
   *idp = SLOT_NONE_ID;
   return NULL;
 }
-#endif
 
 #endif

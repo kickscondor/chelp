@@ -127,14 +127,13 @@
 #define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
 #define slotmap__frl(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 2]
 
-#ifndef SLOTMAP_MACROS_ONLY
 #include <string.h>
 
 //
 // Makes room for a new element.
 // Returns: A pointer to the new object or NULL if no further objects could be created.
 //
-static uint8_t *
+static inline uint8_t *
 slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
 {
   uint8_t *arr = *ary;
@@ -188,6 +187,5 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   *idp = SLOT_NONE_ID;
   return NULL;
 }
-#endif
 
 #endif

@@ -44,7 +44,7 @@
 #ifndef SLOTLIST_MACROS_ONLY
 #include <stdlib.h>
 
-static void *
+static inline void *
 slotlist__sbgrowf(void *arr, SLOT_ID increment, size_t itemsize)
 {
   size_t newsize = 0,
