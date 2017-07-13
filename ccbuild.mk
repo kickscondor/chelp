@@ -60,8 +60,19 @@ LIB = $(PREFIX)/lib/$(NAME)
 BIN = $(PREFIX)/bin
 
 ifeq ($(PLATFORM), android)
-	TOOLCHAIN ?= "$(ANDROIDNDK)/toolchains/$(ARCH)-linux-androideabi-4.9/prebuilt/darwin-x86_64/bin/$(ARCH)-linux-androideabi-"
-	NDK = "$(ANDROIDNDK)/platforms/android-17/arch-$(ARCH)"
+	ARCHBIN = $(ARCH)-linux-android
+	ARCHDIR = $(ARCH)
+	ifeq ($(ARCH), x86)
+		ARCHBIN = i686-linux-android
+	else ifeq ($(ARCH), arm)
+		ARCHDIR = arm-linux-androideabi
+		ARCHBIN = arm-linux-androideabi
+	else ifeq ($(ARCH), arm64)
+		ARCHDIR = aarch64-linux-android
+		ARCHBIN = aarch64-linux-android
+	endif
+	TOOLCHAIN ?= "$(ANDROIDNDK)/toolchains/$(ARCHDIR)-4.9/prebuilt/darwin-x86_64/bin/$(ARCHBIN)-"
+	NDK = "$(ANDROIDNDK)/platforms/android-21/arch-$(ARCH)"
 endif
 
 ifeq ($(PLATFORM), windows)
@@ -113,7 +124,7 @@ ifeq ($(PLATFORM), emscripten)
 endif
 
 ifeq ($(PLATFORM), android)
-	CFLAGS += -I$(NDK)/usr/include
+	CFLAGS += --sysroot=$(NDK)
 endif
 
 ifeq ($(PLATFORM), windows)
@@ -205,7 +216,7 @@ $(OUTDIR)/lib/$(OUTLIB): objects
 
 $(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
-	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LIBS) -o $(OUTBIN)
+	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LDFLAGS) $(LIBS) -o $(OUTBIN)
 	@cp $(OUTBINGLOB) $(OUTDIR)/bin
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
