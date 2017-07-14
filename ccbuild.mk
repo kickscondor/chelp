@@ -129,6 +129,7 @@ endif
 
 ifeq ($(PLATFORM), windows)
 	CFLAGS += -I$(TOOLCHAIN)x86_64-w64-mingw32/include
+	OUTBIN ?= $(NAME).exe
 endif
 
 ifeq ($(OPENGL), 1)
