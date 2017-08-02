@@ -62,14 +62,17 @@ BIN = $(PREFIX)/bin
 ifeq ($(PLATFORM), android)
 	ARCHBIN = $(ARCH)-linux-android
 	ARCHDIR = $(ARCH)
+	ARCHABI = $(ARCH)
 	ifeq ($(ARCH), x86)
 		ARCHBIN = i686-linux-android
 	else ifeq ($(ARCH), arm)
 		ARCHDIR = arm-linux-androideabi
 		ARCHBIN = arm-linux-androideabi
+		ARCHABI = armeabi
 	else ifeq ($(ARCH), arm64)
 		ARCHDIR = aarch64-linux-android
 		ARCHBIN = aarch64-linux-android
+		ARCHABI = arm64-v8a
 	endif
 	TOOLCHAIN ?= "$(ANDROIDNDK)/toolchains/$(ARCHDIR)-4.9/prebuilt/darwin-x86_64/bin/$(ARCHBIN)-"
 	NDK = "$(ANDROIDNDK)/platforms/android-21/arch-$(ARCH)"
@@ -211,7 +214,7 @@ $(OUTDIR)/%.o: $(OUTDIR)/%.c setup
 	@$(ECHO) CC $<
 	$(CC) -c $(CFLAGS) $(INCS) -o $@ $<
 
-$(OUTDIR)/lib/$(OUTLIB): objects
+$(OUTDIR)/lib/lib$(NAME).a: objects
 	@$(ECHO) LINK lib$(NAME)
 	$(AR) rcs $@ $(OBJ)
 
