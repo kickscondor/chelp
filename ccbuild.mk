@@ -245,8 +245,10 @@ $(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
 	mv $@ $(OUTDIR)/lib/lib$(NAME).a
 	@$(ECHO) COPY include
 	@cp -r include/* $(OUTDIR)/include
-	@$(ECHO) COPY platforms/$(PLATFORM)/include
-	@-cp -r platforms/$(PLATFORM)/include/* $(OUTDIR)/include
+	@if [[ -f platforms/$(PLATFORM)/include ]]; then \
+		$(ECHO) COPY platforms/$(PLATFORM)/include; \
+		cp -r platforms/$(PLATFORM)/include/* $(OUTDIR)/include; \
+	fi
 
 todo:
 	@grep -rInso 'TODO: \(.\+\)' core include platforms test
