@@ -82,9 +82,19 @@ ifeq ($(PLATFORM), windows)
 	TOOLCHAIN ?= "$(MINGW64ROOT)/bin/$(ARCH)-w64-mingw32-"
 endif
 
+ifeq ($(PLATFORM), emscripten)
+	AR = emar
+	CC = emcc
+	ARCH ?= wasm
+	LIBS = -s WASM=1
+	OUTBIN ?= $(NAME).js
+	OUTBINGLOB = $(NAME).*
+	STRIP = echo
+endif
+
 TOOLCHAIN ?=
-AR = $(TOOLCHAIN)ar
-CC = $(TOOLCHAIN)gcc
+AR ?= $(TOOLCHAIN)ar
+CC ?= $(TOOLCHAIN)gcc
 CACHESIZE ?= 16384
 DEBUG ?= 0
 ECHO = /bin/echo
@@ -112,19 +122,10 @@ OUTDIR ?= build/$(TARGET)
 
 CFLAGS = -std=c99 -Wall -Wformat
 LDFLAGS = -L.
-LIBS = -lm
+LIBS ?= -lm
 
 VALGRIND = valgrind --tool=memcheck --leak-check=full --show-reachable=yes --num-callers=20 --track-fds=yes
 MEMCHECK_CMD := $(shell $(ECHO) "$(MEMCHECK)" | sed "s/0//; s/1/$(VALGRIND)/")
-
-ifeq ($(PLATFORM), emscripten)
-	AR = emar
-	CC = emcc
-	LIBS = -s WASM=1
-	OUTBIN ?= $(NAME).js
-	OUTBINGLOB = $(NAME).*
-	STRIP = echo
-endif
 
 ifeq ($(PLATFORM), android)
 	CFLAGS += --sysroot=$(NDK)
