@@ -86,7 +86,9 @@ ifeq ($(PLATFORM), emscripten)
 	AR = emar
 	CC = emcc
 	ARCH ?= wasm
-	LIBS = -s WASM=1
+	ifeq ($(ARCH), wasm)
+		LIBS = -s WASM=1
+	endif
 	OUTBIN ?= $(NAME).js
 	OUTBINGLOB = $(NAME).*
 	STRIP = echo
@@ -179,6 +181,29 @@ PKG := "$(NAME)-$(RELEASE)"
 DEFPREFIX = $(shell echo $(NAME) | tr a-z A-Z)
 
 default: all
+
+list-targets:
+	@$(ECHO) "PLATFORM: android (Set ANDROIDNDK path in ~/.ccbuild)"
+	@$(ECHO) "  ARCH: arm"
+	@$(ECHO) "  ARCH: arm64"
+	@$(ECHO) "  ARCH: x86"
+	@$(ECHO) "  ARCH: x86_64"
+	@$(ECHO) "PLATFORM: emscripten (Web platforms)"
+	@$(ECHO) "  ARCH (default): wasm (WebAssembly)"
+	@$(ECHO) "  ARCH: asmjs (Asm.js)"
+	@$(ECHO) "PLATFORM: ios6"
+	@$(ECHO) "  ARCH (default): universal"
+	@$(ECHO) "  ARCH: armv7"
+	@$(ECHO) "  ARCH: armv7s"
+	@$(ECHO) "  ARCH: arm64"
+	@$(ECHO) "  ARCH: i386"
+	@$(ECHO) "  ARCH: x86_64"
+	@$(ECHO) "PLATFORM: linux"
+	@$(ECHO) "  ARCH: x86_64"
+	@$(ECHO) "PLATFORM: mac"
+	@$(ECHO) "  ARCH: x86_64"
+	@$(ECHO) "PLATFORM: windows"
+	@$(ECHO) "  ARCH: x86_64"
 
 config:
 	@$(ECHO) "#define $(DEFPREFIX)_CC       \"$(CC)\""
