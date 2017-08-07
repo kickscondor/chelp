@@ -78,7 +78,16 @@ ifeq ($(PLATFORM), android)
 	NDK = "$(ANDROIDNDK)/platforms/android-21/arch-$(ARCH)"
 endif
 
+ifeq ($(PLATFORM), linux)
+	ARCH ?= x86_64
+endif
+
+ifeq ($(PLATFORM), mac)
+	ARCH ?= x86_64
+endif
+
 ifeq ($(PLATFORM), windows)
+	ARCH ?= x86_64
 	TOOLCHAIN ?= "$(MINGW64ROOT)/bin/$(ARCH)-w64-mingw32-"
 endif
 
