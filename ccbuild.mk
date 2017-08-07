@@ -60,6 +60,7 @@ LIB = $(PREFIX)/lib/$(NAME)
 BIN = $(PREFIX)/bin
 
 ifeq ($(PLATFORM), android)
+	ARCH ?= arm
 	ARCHBIN = $(ARCH)-linux-android
 	ARCHDIR = $(ARCH)
 	ARCHABI = $(ARCH)
@@ -121,8 +122,10 @@ ARCH ?= $(shell $(ECHO) "$(HOST)" | sed "s/-.*//")
 PLATFORM ?= $(shell $(ECHO) "$(HOST)" | \
 	sed "s/^x86_64-apple-darwin.*/mac/; s/^x86_64-.*linux-gnu.*/linux/; s/^.*-w64-mingw.*/windows/; s/^.*-linux-android.*/android/;")
 TARGET = $(PLATFORM)-$(ARCH)
-VERSION := $(shell cat include/$(NAME).h | \
-	sed '/$(DEFPREFIX)_VERSION/!d' | grep -Eow "[0-9]+\\.[0-9]+")
+ifeq ($(VERSION), )
+	VERSION := $(shell cat include/$(NAME).h | \
+		sed '/$(DEFPREFIX)_VERSION/!d' | grep -Eow "[0-9]+\\.[0-9]+")
+endif
 MAJORVER := $(shell $(ECHO) "$(VERSION)" | sed "s/\\.[0-9]*//")
 MINORVER := $(shell $(ECHO) "$(VERSION)" | sed "s/^[0-9]*\\.//")
 DATE := $(shell date +%Y-%m-%d)
@@ -165,6 +168,12 @@ endif
 endif
 
 ifeq ($(PLATFORM), ios6)
+	ifeq ($(DEBUG), 1)
+		export XCODECONFIG = Debug
+	else
+		export XCODECONFIG = Release
+	endif
+
 	ifeq ($(IOS_PLATFORM),)
 		OUTLIB = lib$(NAME)-ios6.a
 		ARCH = universal
@@ -193,7 +202,7 @@ default: all
 
 list-targets:
 	@$(ECHO) "PLATFORM: android (Set ANDROIDNDK path in ~/.ccbuild)"
-	@$(ECHO) "  ARCH: arm"
+	@$(ECHO) "  ARCH (default): arm"
 	@$(ECHO) "  ARCH: arm64"
 	@$(ECHO) "  ARCH: x86"
 	@$(ECHO) "  ARCH: x86_64"
