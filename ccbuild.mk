@@ -167,9 +167,9 @@ ifeq ($(PLATFORM), linux)
 						 `pkg-config --libs pangoft2` \
 						 `curl-config --libs`
 	LIBS += -lGL -lGLU -lGLEW
-	SDK_VERSION = `pkg-config --modversion glfw3` \
-						    `pkg-config --modversion pangoft2` \
-						    `curl-config --version`
+	SDK_VERSION = glfw3-$(shell pkg-config --modversion glfw3) \
+						    pangoft2-$(shell pkg-config --modversion pangoft2) \
+						    $(shell curl-config --version)
 endif
 endif
 
@@ -205,7 +205,7 @@ OUTBINGLOB ?= $(OUTBIN)
 PKG := "$(NAME)-$(RELEASE)"
 DEFPREFIX = $(shell echo $(NAME) | tr a-z A-Z)
 LOCKHASH = { \
-	"$(CC)" => "$(shell $(CC) -v 2>&1 | head -1)", \
+	"$(CC)" => "$(shell $(CC) --version 2>&1 | head -1)", \
 	"sdk" => "$(SDK_VERSION)" \
 }
 
@@ -256,6 +256,9 @@ version:
 	@$(ECHO) "#define $(DEFPREFIX)_RELEASE       \"$(RELEASE)\""
 	@$(ECHO) "#define $(DEFPREFIX)_DATE          \"$(DATE)\""
 	@$(ECHO) "#define $(DEFPREFIX)_COMMIT        \"$(COMMIT)\""
+
+lockhash:
+	@ruby -ryaml -e 'puts({"$(TARGET)" => $(LOCKHASH)}.to_yaml)'
 
 lockfile:
 	@ruby -ryaml -e 'l = YAML.load_file("Makefile.lock") rescue {}; \
