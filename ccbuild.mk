@@ -58,6 +58,7 @@ include ~/.ccbuild
 PREFIX = /usr/local
 LIB = $(PREFIX)/lib/$(NAME)
 BIN = $(PREFIX)/bin
+SDK_VERSION =
 
 ifeq ($(PLATFORM), android)
 	ARCH ?= arm
@@ -77,6 +78,7 @@ ifeq ($(PLATFORM), android)
 	endif
 	TOOLCHAIN ?= "$(ANDROIDNDK)/toolchains/$(ARCHDIR)-4.9/prebuilt/darwin-x86_64/bin/$(ARCHBIN)-"
 	NDK = "$(ANDROIDNDK)/platforms/android-21/arch-$(ARCH)"
+  SDK_VERSION = $(shell $(ECHO) "$(ANDROIDNDK)" | grep -Eow "r[0-9]+")
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -85,6 +87,7 @@ endif
 
 ifeq ($(PLATFORM), mac)
 	ARCH ?= x86_64
+	SDK_VERSION = $(shell otool -l /System/Library/Frameworks/Foundation.framework/Foundation | grep sdk)
 endif
 
 ifeq ($(PLATFORM), windows)
@@ -164,6 +167,9 @@ ifeq ($(PLATFORM), linux)
 						 `pkg-config --libs pangoft2` \
 						 `curl-config --libs`
 	LIBS += -lGL -lGLU -lGLEW
+	SDK_VERSION = `pkg-config --modversion glfw3` \
+						    `pkg-config --modversion pangoft2` \
+						    `curl-config --version`
 endif
 endif
 
@@ -183,6 +189,7 @@ ifeq ($(PLATFORM), ios6)
 		IOS_SDK = ${IOS_DEV}/SDKs/$(shell ls ${IOS_DEV}/SDKs | sort -r | head -n1)
 		CFLAGS += -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} \
 			-fembed-bitcode -miphoneos-version-min=6.0
+		SDK_VERSION = $(shell $(ECHO) "$(IOS_SDK)" | grep -Eow "iPhoneOS[0-9]+\\.[0-9]+.sdk")
 	endif
 endif
 
@@ -197,6 +204,10 @@ OUTBIN ?= $(NAME)
 OUTBINGLOB ?= $(OUTBIN)
 PKG := "$(NAME)-$(RELEASE)"
 DEFPREFIX = $(shell echo $(NAME) | tr a-z A-Z)
+LOCKHASH = { \
+	"$(CC)" => "$(shell $(CC) -v 2>&1 | head -1)", \
+	"sdk" => "$(SDK_VERSION)" \
+}
 
 default: all
 
@@ -246,6 +257,19 @@ version:
 	@$(ECHO) "#define $(DEFPREFIX)_DATE          \"$(DATE)\""
 	@$(ECHO) "#define $(DEFPREFIX)_COMMIT        \"$(COMMIT)\""
 
+lockfile:
+	@ruby -ryaml -e 'l = YAML.load_file("Makefile.lock") rescue {}; \
+		l.merge!({"$(TARGET)" => $(LOCKHASH)}); \
+		File.open("Makefile.lock", "w") { |f| f << l.to_yaml }'
+
+check-env:
+	@ruby -ryaml -e 'needs = YAML.load_file("Makefile.lock")["$(TARGET)"] rescue nil; \
+		abort "** No $(TARGET) found in Makefile.lock." unless needs; \
+		has = $(LOCKHASH); \
+		if needs.to_s != has.to_s; puts "** Environment has changed."; \
+		  puts "  -> Original environment: #{needs}"; \
+			abort "  -> Current environment: #{has}"; end'
+		
 $(OUTDIR)/%.o: %.m setup
 	@$(ECHO) CC $<
 	@$(CC) -c $(CFLAGS) $(INCS) -fobjc-arc -o $@ $<
