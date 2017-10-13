@@ -173,7 +173,7 @@ ifeq ($(PLATFORM), linux)
 endif
 endif
 
-ifeq ($(PLATFORM), ios6)
+ifeq ($(PLATFORM), ios)
 	ifeq ($(DEBUG), 1)
 		export XCODECONFIG = Debug
 	else
@@ -181,14 +181,14 @@ ifeq ($(PLATFORM), ios6)
 	endif
 
 	ifeq ($(IOS_PLATFORM),)
-		OUTLIB = lib$(NAME)-ios6.a
+		OUTLIB = lib$(NAME)-ios.a
 		ARCH = universal
 	else
 		XCODE = $(shell xcode-select --print-path)
 		IOS_DEV = ${XCODE}/Platforms/${IOS_PLATFORM}.platform/Developer
 		IOS_SDK = ${IOS_DEV}/SDKs/$(shell ls ${IOS_DEV}/SDKs | sort -r | head -n1)
 		CFLAGS += -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} \
-			-fembed-bitcode -miphoneos-version-min=6.0
+			-fembed-bitcode -miphoneos-version-min=7.0
 		SDK_VERSION = $(shell $(ECHO) "$(IOS_SDK)" | grep -Eow "iPhoneOS[0-9]+\\.[0-9]+.sdk")
 	endif
 endif
@@ -220,7 +220,7 @@ list-targets:
 	@$(ECHO) "PLATFORM: emscripten (Web platforms)"
 	@$(ECHO) "  ARCH (default): wasm (WebAssembly)"
 	@$(ECHO) "  ARCH: asmjs (Asm.js)"
-	@$(ECHO) "PLATFORM: ios6"
+	@$(ECHO) "PLATFORM: ios"
 	@$(ECHO) "  ARCH (default): universal"
 	@$(ECHO) "  ARCH: armv7"
 	@$(ECHO) "  ARCH: armv7s"
@@ -298,19 +298,19 @@ $(OUTDIR)/bin/$(OUTBIN): objects
 		$(STRIP) $(OUTDIR)/bin/$(OUTBIN); \
 	fi
 
-$(OUTDIR)/lib/lib$(NAME)-ios6.a: setup
+$(OUTDIR)/lib/lib$(NAME)-ios.a: setup
 	@mkdir -p $(OUTDIR)/lib
-	${MAKE} PLATFORM=ios6 ARCH=armv7  IOS_PLATFORM=iPhoneOS
-	${MAKE} PLATFORM=ios6 ARCH=armv7s IOS_PLATFORM=iPhoneOS
-	${MAKE} PLATFORM=ios6 ARCH=arm64  IOS_PLATFORM=iPhoneOS
-	${MAKE} PLATFORM=ios6 ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator
-	${MAKE} PLATFORM=ios6 ARCH=i386   IOS_PLATFORM=iPhoneSimulator
+	${MAKE} PLATFORM=ios ARCH=armv7  IOS_PLATFORM=iPhoneOS
+	${MAKE} PLATFORM=ios ARCH=armv7s IOS_PLATFORM=iPhoneOS
+	${MAKE} PLATFORM=ios ARCH=arm64  IOS_PLATFORM=iPhoneOS
+	${MAKE} PLATFORM=ios ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator
+	${MAKE} PLATFORM=ios ARCH=i386   IOS_PLATFORM=iPhoneSimulator
 	lipo -create \
-		-arch armv7  build/ios6-armv7/lib/lib$(NAME).a \
-		-arch armv7s build/ios6-armv7s/lib/lib$(NAME).a \
-		-arch arm64  build/ios6-arm64/lib/lib$(NAME).a \
-		-arch x86_64 build/ios6-x86_64/lib/lib$(NAME).a \
-		-arch i386   build/ios6-i386/lib/lib$(NAME).a \
+		-arch armv7  build/ios-armv7/lib/lib$(NAME).a \
+		-arch armv7s build/ios-armv7s/lib/lib$(NAME).a \
+		-arch arm64  build/ios-arm64/lib/lib$(NAME).a \
+		-arch x86_64 build/ios-x86_64/lib/lib$(NAME).a \
+		-arch i386   build/ios-i386/lib/lib$(NAME).a \
 		-output      $@
 	mv $@ $(OUTDIR)/lib/lib$(NAME).a
 	@$(ECHO) COPY include
