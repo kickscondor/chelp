@@ -188,7 +188,7 @@ ifeq ($(PLATFORM), ios)
 		IOS_DEV = ${XCODE}/Platforms/${IOS_PLATFORM}.platform/Developer
 		IOS_SDK = ${IOS_DEV}/SDKs/$(shell ls ${IOS_DEV}/SDKs | sort -r | head -n1)
 		CFLAGS += -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} \
-			-fembed-bitcode -miphoneos-version-min=7.0
+			-fembed-bitcode -miphoneos-version-min=8.0
 		SDK_VERSION = $(shell $(ECHO) "$(IOS_SDK)" | grep -Eow "iPhoneOS[0-9]+\\.[0-9]+.sdk")
 	endif
 endif
