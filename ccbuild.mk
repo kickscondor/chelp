@@ -194,7 +194,7 @@ ifeq ($(PLATFORM), ios)
 endif
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -g -D_DEBUG
+	CFLAGS += -g -DDEBUG
 else
 	CFLAGS += -Os
 endif
