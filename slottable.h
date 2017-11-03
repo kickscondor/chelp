@@ -118,8 +118,8 @@ static inline uint32_t slottable_str_hash(const char *s)
 // deletion during the loop.
 #define slottable_scan(a, id, item, v, blk) if (a) { \
   Ch_SlotTable *tbl = (Ch_SlotTable *)(a); \
-  for (Q_SIZE i = 0; i < tbl->allocated; i++) { \
-    Q_ID *id = tbl->index + i; \
+  for (uint32_t i = 0; i < tbl->allocated; i++) { \
+    SLOT_ID *id = tbl->index + i; \
     while (*id != SLOT_NONE_ID) { \
       Ch_SlotTableItem *item = slottable_at_id(a, *id); \
       SLOT_ID next = item->next; \
@@ -132,10 +132,10 @@ static inline uint32_t slottable_str_hash(const char *s)
   } \
 }
 
-#define slottable_remove_item(a, id, item) { \
+#define slottable_remove_item(a, idref, item) { \
   Ch_SlotTable *__tbl__ = (Ch_SlotTable *)a; \
-  SLOT_ID this_id = *id; \
-  *id = item->next; \
+  SLOT_ID this_id = *idref; \
+  *idref = item->next; \
   item->hash = SLOT_NONE_ID; \
   item->next = __tbl__->next_free; \
   __tbl__->next_free = this_id; \
@@ -150,7 +150,6 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Returns: A pointer to the slot table item's data or NULL if no item is found.
 #define slottable_remove(a, hsh, cmp, key) (!(a) ? NULL : ({ \
   SLOT_ID *__id__ = NULL; \
-  Ch_SlotTable *__tbl__ = (Ch_SlotTable *)a; \
   __typeof__(a) data = slottable_find_and_id(a, hsh, cmp, key, __id__); \
   Ch_SlotTableItem *item = slottable__item(a, *__id__, sizeof(*(a))); \
   slottable_remove_item(a, __id__, item); \
