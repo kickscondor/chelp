@@ -77,13 +77,20 @@
 // Returns: A uint32_t.
 #define slotmap_allocated(a)  ((a) ? slotmap__siz(a) : 0)
 
-// Add a new entry in the slot map 'a' and set SLOT_ID variable 'id' to the ID of the new entry.
+// Copy an entry 'o' into a new slot in slot map 'a', setting 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
-#define slotmap_add(a,id)     ({ \
+#define slotmap_copy(a,o,id)  ({ \
   __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
-  if (item) { item->version = (id >> 24); } \
+  if (item) { \
+    if (NULL != o) { *item = *((__typeof__(a))o); } \
+    item->version = (id >> 24); \
+  } \
   item; \
 })
+
+// Add a new entry in the slot map 'a' and set SLOT_ID variable 'id' to the ID of the new entry.
+// Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
+#define slotmap_add(a,id)     slotmap_copy(a,NULL,id)
 
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
