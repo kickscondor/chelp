@@ -121,7 +121,7 @@ static inline uint32_t slottable_str_hash(const char *s)
   for (uint32_t i = 0; i < tbl->allocated; i++) { \
     SLOT_ID *id = tbl->index + i; \
     while (*id != SLOT_NONE_ID) { \
-      Ch_SlotTableItem *item = slottable_at_id(a, *id); \
+      Ch_SlotTableItem *item = slottable__item(a, *id, sizeof(*(a))); \
       SLOT_ID next = item->next; \
       __typeof__(a) v = (__typeof__(a))item->data; \
       blk; \
@@ -159,7 +159,10 @@ static inline uint32_t slottable_str_hash(const char *s)
 // Get a pointer to an element by supplying the slot table 'a' that contains it and its
 // actual ID (not hash). Use slottable_find to use the hash to lookup.
 // Returns: A pointer to the element or NULL if the element is not found.
-#define slottable_at_id(a, id) (!(a) ? NULL : slottable__item(a, id, sizeof(*(a))))
+#define slottable_at_id(a, id) (!(a) ? NULL : ({ \
+  Ch_SlotTable *item = slottable__item(a, id, sizeof(*(a))); \
+  item == NULL ? NULL : (__typeof__(a))item->data; \
+}))
 
 #define slottable__item(a, id, sz) slottable__data_item((uint8_t *)slottable__data(a), id, sz)
 #define slottable__data_item(data, id, sz) ((Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(Ch_SlotTableItem)))))
