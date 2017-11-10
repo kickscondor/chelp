@@ -160,7 +160,7 @@ static inline uint32_t slottable_str_hash(const char *s)
 // actual ID (not hash). Use slottable_find to use the hash to lookup.
 // Returns: A pointer to the element or NULL if the element is not found.
 #define slottable_at_id(a, id) (!(a) ? NULL : ({ \
-  Ch_SlotTable *item = slottable__item(a, id, sizeof(*(a))); \
+  Ch_SlotTableItem *item = slottable__item(a, id, sizeof(*(a))); \
   item == NULL ? NULL : (__typeof__(a))item->data; \
 }))
 
