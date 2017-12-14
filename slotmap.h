@@ -79,19 +79,11 @@
 
 // Add a new entry in the slot map 'a' and set SLOT_ID variable 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
-#define slotmap_add(a,id)     ({ \
-  __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
-  if (item) { item->version = (id >> 24); } \
-  item; \
-})
+#define slotmap_add(a,id)     slotmap__new(a,id,{})
 
 // Copy an entry 'o' into a new slot in slot map 'a', setting 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
-#define slotmap_copy(a,o,id)  ({ \
-  __typeof__(a) item = slotmap_add(a,id); \
-  if (item) { *item = *((__typeof__(a))o); } \
-  item; \
-})
+#define slotmap_copy(a,o,id)  slotmap__new(a,id, { *item = *((__typeof__(a))o); })
 
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
@@ -134,6 +126,15 @@
 #define slotmap__siz(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 0]
 #define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
 #define slotmap__frl(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 2]
+
+#define slotmap__new(a,id,blk)     ({ \
+  __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
+  if (item) { \
+    blk; \
+    item->version = (id >> 24); \
+  } \
+  item; \
+})
 
 #include <string.h>
 
