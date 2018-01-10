@@ -287,7 +287,7 @@ $(OUTDIR)/%.o: $(OUTDIR)/%.c setup
 
 $(OUTDIR)/lib/lib$(NAME).a: objects
 	@$(ECHO) LINK lib$(NAME)
-	$(AR) rcs $@ $(OBJ)
+	$(AR) rcs $@ $(OBJ) $(OBJ_LIB)
 
 $(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)

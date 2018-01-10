@@ -46,6 +46,17 @@ static inline uint32_t slottable_str_hash(const char *s)
   return h;
 }
 
+static inline uint32_t slottable_strnhash(const char *s, size_t len)
+{
+  uint32_t h = 0;
+  if (len > 0) {
+    h = (uint32_t)*s;
+    while (--len > 0)
+      h = (h << 5) - h + (uint32_t)*++s;
+  }
+  return h;
+}
+
 #ifndef SLOT_DOUBLE_SIZE
 #define SLOT_DOUBLE_SIZE(n) (!(n) ? 8 : ((n) * 2))
 #endif
