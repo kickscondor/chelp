@@ -2,7 +2,8 @@
 // slotmap.h
 //
 // A slot map type, based on Sean Barrett's stretchy_buffer, except with a fixed-size freelist, to
-// reuse slots.
+// reuse slots. And the idea from that came from Sean Middleditch's blog on slotmaps.
+// http://seanmiddleditch.com/data-structures-for-game-developers-the-slot-map/
 //
 // A WARNING
 //
@@ -13,11 +14,10 @@
 //
 // So basically, the layout looks like this:
 //
-//   char[SLOT_EXT_SIZE] user_data
 //   uint32_t allocated_entries
 //   uint32_t filled_entries
-//   uint32_t freelist_entries
-//   uint32_t[allocated_entries] freelist
+//   uint32_t next_free_entry
+//   uint32_t total_free_entries
 //   user_struct[allocated_entries] items
 //
 // You can't 'push' on to the slot map. Everything is kept unordered.
@@ -32,8 +32,7 @@
 //   with realloc of the entire pool.
 // * It's basically another memory pool / arena strategy, but remains contiguous. Good for
 //   vertex arrays. Good for the CPU cache.
-// * Keep memory low? I don't know - there's a 4 byte overhead on each entry - so maybe this
-//   is bogus.
+// * Keep memory low? I don't know - there's a 1 byte overhead on each entry.
 //
 // TODO: Defragment the slotmap. What I want to do with this is to make the freelist
 // only as big as the difference between the last allocation size and the new
@@ -51,13 +50,18 @@
 
 #include "slotbase.h"
 
+typedef struct {
+  uint8_t version;
+  uint32_t next_free : 24;
+} SLOTMAP_FREE;
+
 // The maximum element ID for a slot map. This is a hard limit of 16 million.
-#define SLOTMAP_MAX_ID   0xFFFFFF
+#define SLOTMAP_MAX_ID        0xFFFFFF
 
 // Gets the 0-based array index of an element in the slot map by its 'id'. (You cannot loop through
 // a slot map in this order, though. There will be holes with invalid data.)
 // Returns: A SLOT_ID.
-#define slotmap_index(id)        ((id) & SLOTMAP_MAX_ID)
+#define slotmap_index(id)     ((id) & SLOTMAP_MAX_ID)
 
 // Free an entire slot map 'a' from memory. This doesn't just free the slot map metadata -
 // everything is freed. Elements are part of the contiguous block of the slot map.
@@ -71,7 +75,7 @@
 
 // A count of how many active entries there are with valid data in the slot map 'a'.
 // Returns: A uint32_t.
-#define slotmap_count(a)      ((a) ? slotmap__use(a) - slotmap__frl(a) : 0)
+#define slotmap_count(a)      ((a) ? slotmap__use(a) - slotmap__frc(a) : 0)
 
 // A count of how many entries the slot map 'a' already has allocated space for.
 // Returns: A uint32_t.
@@ -109,23 +113,24 @@
 #define slotmap_remove(a,id)  (!a ? 0 : ({ \
   __typeof__(a) item = slotmap_at(a,id); \
   if (item) { \
-    item->version++; \
-    slotmap__freelist(a)[slotmap__frl(a)++] = slotmap__id(id, item->version); \
+    *((SLOTMAP_FREE *)item) = (SLOTMAP_FREE){item->version + 1, slotmap64__frl(a)}; \
+    slotmap__frl(a) = slotmap_index(id); \
+    slotmap__frc(a)++; \
   } \
   item; \
 }))
 
 // Fetch the beginning of the actual items.
-#define slotmap_array(a)      ((__typeof__(a))(((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE + slotmap__siz(a))))
+#define slotmap_array(a)      ((__typeof__(a))(((SLOT_ID *)(a)) + 4))
 
 //
 // internal macros
 //
 #define slotmap__id(index,v)  (slotmap_index(index) | ((SLOT_ID)(v) << 24))
-#define slotmap__freelist(a)  (((SLOT_ID *)(a)) + (3 + SLOT_EXT_SIZE))
-#define slotmap__siz(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 0]
-#define slotmap__use(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 1]
-#define slotmap__frl(a)       ((SLOT_ID *)(a))[SLOT_EXT_SIZE + 2]
+#define slotmap__siz(a)       ((SLOT_ID *)(a))[0]
+#define slotmap__use(a)       ((SLOT_ID *)(a))[1]
+#define slotmap__frl(a)       ((SLOT_ID *)(a))[2]
+#define slotmap__frc(a)       ((SLOT_ID *)(a))[3]
 
 #define slotmap__new(a,id,blk)     ({ \
   __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
@@ -155,9 +160,11 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   //
   if (arr) {
     x = slotmap__frl(arr);
-    if (x) {
-      *idp = x = slotmap__freelist(arr)[--slotmap__frl(arr)];
-      return slotmap_array(arr) + (slotmap_index(x) * itemsize);
+    if (x != SLOT_NONE_ID) {
+      SLOTMAP_FREE *free_item = (SLOTMAP_FREE *)(slotmap_array(arr) + (x * itemsize));
+      *idp = slotmap__id(x, free_item->version);
+      slotmap__frl(arr) = free_item->next_free;
+      return (uint8_t *)free_item;
     } else {
       siz = slotmap__siz(arr);
       used = slotmap__use(arr);
@@ -168,15 +175,13 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   // Allocate additional space
   //
   newsiz = SLOT_ALIGN(
-    (SLOT_FLEX_SIZE(siz) * (itemsize + sizeof(SLOT_ID))) +
-    (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE)), SLOT_ALIGN_SIZE);
+    (SLOT_FLEX_SIZE(siz) * itemsize) +
+    (sizeof(SLOT_ID) * 4), SLOT_ALIGN_SIZE);
   if (used == siz) {
     p = (SLOT_ID *)SLOT_REALLOC(arr, newsiz);
-    x = (newsiz - (sizeof(SLOT_ID) * (3 + SLOT_EXT_SIZE))) / (itemsize + sizeof(SLOT_ID));
-    memmove(p + (x + 3 + SLOT_EXT_SIZE), p + (siz + 3 + SLOT_EXT_SIZE), used * itemsize);
-
+    x = (newsiz - (sizeof(SLOT_ID) * 4)) / itemsize;
     *ary = (uint8_t *)p;
-    p[0 + SLOT_EXT_SIZE] = x;
+    p[0] = x;
   } else {
     p = (SLOT_ID *)arr;
   }
@@ -186,9 +191,10 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   //
   if (p) {
     if (!arr) {
-      p[1 + SLOT_EXT_SIZE] = p[2 + SLOT_EXT_SIZE] = 0;
+      p[1] = p[3] = 0;
+      p[2] = SLOT_NONE_ID;
     }
-    *idp = x = p[1 + SLOT_EXT_SIZE]++;
+    *idp = x = p[1]++;
     arr = *ary;
     return slotmap_array(arr) + (x * itemsize);
   }

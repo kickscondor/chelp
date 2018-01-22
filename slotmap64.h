@@ -2,7 +2,13 @@
 // slotmap64.h
 //
 // This is a larger slotmap, designed to use 64-bit IDs. This allows for more
-// storage space and fewer version number conflicts.
+// storage space and fewer version number conflicts. (See slotmap.h for details,
+// of the internals are identical, with the exception of the increased sizing.)
+//
+// PLEASE NOTE! IT IS CRUCIAL that your stored structure be at least 8 bytes
+// (64-bit) in size. I mean this makes sense: why pass around 64-bit IDs to
+// a structure that is smaller than 64-bit? Sure, for boxing primitives, but
+// still - make the box at least 64-bit in size (including the version number).
 //
 // LICENSE
 //
@@ -25,8 +31,8 @@ typedef struct {
   uint32_t next_free;
 } SLOTMAP64_FREE;
 
-// The maximum element ID for a slot map.
-#define SLOTMAP64_MAX_ID        UINT32_MAX
+// The maximum element index for a slot map.
+#define SLOTMAP64_MAX_INDEX     UINT32_MAX
 
 #define SLOTMAP64_NONE_ID       slotmap64__id(UINT32_MAX, UINT32_MAX)
 
@@ -126,11 +132,11 @@ slotmap64__make(uint8_t **ary, size_t itemsize, SLOTMAP64_ID *idp)
   //
   if (arr) {
     x = slotmap64__frl(arr);
-    if (x != UINT32_MAX) {
+    if (x != SLOTMAP64_MAX_INDEX) {
       SLOTMAP64_FREE *free_item = (SLOTMAP64_FREE *)(slotmap64_array(arr) + (x * itemsize));
       *idp = slotmap64__id(x, free_item->version);
       slotmap64__frl(arr) = free_item->next_free;
-      return (uint8_t *)p;
+      return (uint8_t *)free_item;
     } else {
       siz = slotmap64__siz(arr);
       used = slotmap64__use(arr);
@@ -158,7 +164,7 @@ slotmap64__make(uint8_t **ary, size_t itemsize, SLOTMAP64_ID *idp)
   if (p) {
     if (!arr) {
       p[1] = p[3] = 0;
-      p[2] = UINT32_MAX;
+      p[2] = SLOTMAP64_MAX_INDEX;
     }
     *idp = slotmap64__id(x = p[1]++, 0);
     arr = *ary;
