@@ -34,7 +34,7 @@
 # else that needs to be done prior to build.)
 #
 #   setup: setup-dirs include/demo.h
-#   
+#
 #   setup-dirs:
 #   	@mkdir -p $(OUTDIR)/include
 #   	@mkdir -p $(OUTDIR)/source
@@ -137,7 +137,7 @@ COMMIT := $(shell git rev-list HEAD -1 --abbrev=7 --abbrev-commit)
 RELEASE ?= $(VERSION).$(REVISION)
 OUTDIR ?= build/$(TARGET)
 
-CFLAGS = -std=c99 -Wall -Wformat
+CFLAGS = -std=gnu99 -Wall -Wformat
 LDFLAGS = -L.
 LIBS ?= -lm
 
@@ -272,7 +272,7 @@ check-env:
 		if needs.to_s != has.to_s; puts "** Environment has changed."; \
 		  puts "  -> Original environment: #{needs}"; \
 			abort "  -> Current environment: #{has}"; end'
-		
+
 $(OUTDIR)/%.o: %.m setup
 	@$(ECHO) CC $<
 	@$(CC) -c $(CFLAGS) $(INCS) -fobjc-arc -o $@ $<
