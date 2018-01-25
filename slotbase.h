@@ -39,12 +39,6 @@
 #define SLOT_ALIGN_SIZE 16
 #endif
 
-// The basic slot lists and maps have no surplus space for user data.
-// This size should be the number of uint32_t spaces to allocate.
-#ifndef SLOT_EXT_SIZE
-#define SLOT_EXT_SIZE 0
-#endif
-
 // The 'none' ID.
 #ifndef SLOT_NONE_ID
 #define SLOT_NONE_ID  UINT32_MAX

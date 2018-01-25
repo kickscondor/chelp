@@ -175,6 +175,12 @@ static inline uint32_t slottable_strnhash(const char *s, size_t len)
   item == NULL ? NULL : (__typeof__(a))item->data; \
 }))
 
+// Get the ID of an element 'v' in the slot table 'a'.
+// Returns: A Q_ID.
+#define slottable_id(a, v) \
+  (Q_ID)(((uint8_t *)(v) - (uint8_t *)slottable__data(a)) / \
+    (sizeof(*(a)) + sizeof(Ch_SlotTableItem)))
+
 #define slottable__item(a, id, sz) slottable__data_item((uint8_t *)slottable__data(a), id, sz)
 #define slottable__data_item(data, id, sz) ((Ch_SlotTableItem *)(((uint8_t *)(data)) + (id * (sz + sizeof(Ch_SlotTableItem)))))
 

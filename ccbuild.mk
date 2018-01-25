@@ -235,18 +235,21 @@ list-targets:
 	@$(ECHO) "  ARCH: x86_64"
 
 config:
-	@$(ECHO) "#define $(DEFPREFIX)_CC       \"$(CC)\""
-	@$(ECHO) "#define $(DEFPREFIX)_CFLAGS   \"$(CFLAGS)\""
-	@$(ECHO) "#define $(DEFPREFIX)_DEBUG    $(DEBUG)"
-	@$(ECHO) "#define $(DEFPREFIX)_MAKE     \"$(MAKE)\""
-	@$(ECHO) "#define $(DEFPREFIX)_PREFIX   \"$(PREFIX)\""
-	@$(ECHO) "#define $(DEFPREFIX)_LIB      \"$(LIB)\""
-	@$(ECHO) "#define $(DEFPREFIX)_BIN      \"$(BIN)\""
+	@$(ECHO) "#define $(DEFPREFIX)_CC        \"$(CC)\""
+	@$(ECHO) "#define $(DEFPREFIX)_CFLAGS    \"$(CFLAGS)\""
+	@$(ECHO) "#define $(DEFPREFIX)_DEBUG     $(DEBUG)"
+	@$(ECHO) "#define $(DEFPREFIX)_MAKE      \"$(MAKE)\""
+	@$(ECHO) "#define $(DEFPREFIX)_PREFIX    \"$(PREFIX)\""
+	@$(ECHO) "#define $(DEFPREFIX)_LIB       \"$(LIB)\""
+	@$(ECHO) "#define $(DEFPREFIX)_BIN       \"$(BIN)\""
 	@$(ECHO)
-	@$(ECHO) "#define $(DEFPREFIX)_HOST     \"$(HOST)\""
-	@$(ECHO) "#define $(DEFPREFIX)_PLATFORM \"$(PLATFORM)\""
-	@$(ECHO) "#define $(DEFPREFIX)_ARCH     \"$(ARCH)\""
-	@$(ECHO) "#define $(DEFPREFIX)_TARGET   \"$(TARGET)\""
+	@$(ECHO) "#define $(DEFPREFIX)_HOST      \"$(HOST)\""
+	@$(ECHO) "#define $(DEFPREFIX)_PLATFORM  \"$(PLATFORM)\""
+	@$(ECHO) "#define __platform_$(PLATFORM)__"
+	@$(ECHO) "#define $(DEFPREFIX)_ARCH      \"$(ARCH)\""
+	@$(ECHO) "#define __arch_$(ARCH)__"
+	@$(ECHO) "#define $(DEFPREFIX)_TARGET    \"$(TARGET)\""
+	@$(ECHO) "#define $(DEFPREFIX)_ARCH_ID   $(DEFPREFIX)_$(ARCH)"
 	@$(ECHO) "#define $(DEFPREFIX)_CACHESIZE $(CACHESIZE)"
 
 version:
