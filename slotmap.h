@@ -132,10 +132,10 @@ typedef struct {
 #define slotmap__frl(a)       ((SLOT_ID *)(a))[2]
 #define slotmap__frc(a)       ((SLOT_ID *)(a))[3]
 
-#define slotmap__new(a,id,blk)     ({ \
+#define slotmap__new(a,id,...)     ({ \
   __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
   if (item) { \
-    blk; \
+    __VA_ARGS__; \
     item->version = (id >> 24); \
   } \
   item; \

@@ -104,10 +104,10 @@ typedef struct {
 #define slotmap64__frl(a)       ((uint32_t *)(a))[2]
 #define slotmap64__frc(a)       ((uint32_t *)(a))[3]
 
-#define slotmap64__new(a,id,blk)     ({ \
+#define slotmap64__new(a,id,...)     ({ \
   __typeof__(a) item = (__typeof__(a))slotmap64__make((uint8_t **)&a, sizeof(*(a)), &id); \
   if (item) { \
-    blk; \
+    __VA_ARGS__; \
     item->version = (id).version; \
   } \
   item; \

@@ -127,7 +127,7 @@ static inline uint32_t slottable_strnhash(const char *s, size_t len)
 // Loop through the slottable contents in hash order. While the scan will be
 // out of order, this technique is the fastest and the safest way to allow
 // deletion during the loop.
-#define slottable_scan(a, id, item, v, blk) if (a) { \
+#define slottable_scan(a, id, item, v, ...) if (a) { \
   Ch_SlotTable *tbl = (Ch_SlotTable *)(a); \
   for (uint32_t i = 0; i < tbl->allocated; i++) { \
     SLOT_ID *id = tbl->index + i; \
@@ -135,7 +135,7 @@ static inline uint32_t slottable_strnhash(const char *s, size_t len)
       Ch_SlotTableItem *item = slottable__item(a, *id, sizeof(*(a))); \
       SLOT_ID next = item->next; \
       __typeof__(a) v = (__typeof__(a))item->data; \
-      blk; \
+      __VA_ARGS__; \
       if (next != *id) { \
         id = &item->next; \
       } \
