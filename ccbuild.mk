@@ -123,7 +123,7 @@ HOST := $(shell $(CC) -v 2>&1 | \
 	sed "s/.* --target=//; s/Target: //; s/ .*//" | head -1)
 ARCH ?= $(shell $(ECHO) "$(HOST)" | sed "s/-.*//")
 PLATFORM ?= $(shell $(ECHO) "$(HOST)" | \
-	sed "s/^x86_64-apple-darwin.*/mac/; s/^x86_64-.*linux-gnu.*/linux/; s/^.*-w64-mingw.*/windows/; s/^.*-linux-android.*/android/;")
+	sed "s/^x86_64-apple-darwin.*/mac/; s/^.*linux-gnu.*/linux/; s/^.*-w64-mingw.*/windows/; s/^.*-linux-android.*/android/;")
 TARGET = $(PLATFORM)-$(ARCH)
 ifeq ($(VERSION), )
 	VERSION := $(shell cat include/$(NAME).h | \
