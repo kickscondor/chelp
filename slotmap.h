@@ -113,7 +113,7 @@ typedef struct {
 #define slotmap_remove(a,id)  (!a ? 0 : ({ \
   __typeof__(a) item = slotmap_at(a,id); \
   if (item) { \
-    *((SLOTMAP_FREE *)item) = (SLOTMAP_FREE){item->version + 1, slotmap64__frl(a)}; \
+    *((SLOTMAP_FREE *)item) = (SLOTMAP_FREE){item->version + 1, slotmap__frl(a)}; \
     slotmap__frl(a) = slotmap_index(id); \
     slotmap__frc(a)++; \
   } \
@@ -160,7 +160,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
   //
   if (arr) {
     x = slotmap__frl(arr);
-    if (x != SLOT_NONE_ID) {
+    if (slotmap_index(x) != SLOTMAP_MAX_ID) {
       SLOTMAP_FREE *free_item = (SLOTMAP_FREE *)(slotmap_array(arr) + (x * itemsize));
       *idp = slotmap__id(x, free_item->version);
       slotmap__frl(arr) = free_item->next_free;
