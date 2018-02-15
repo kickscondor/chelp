@@ -51,7 +51,7 @@
 #include "slotbase.h"
 
 typedef struct {
-  uint8_t version;
+  uint32_t version   : 8;
   uint32_t next_free : 24;
 } SLOTMAP_FREE;
 
@@ -163,6 +163,7 @@ slotmap__make(uint8_t **ary, size_t itemsize, SLOT_ID *idp)
     if (slotmap_index(x) != SLOTMAP_MAX_ID) {
       SLOTMAP_FREE *free_item = (SLOTMAP_FREE *)(slotmap_array(arr) + (x * itemsize));
       *idp = slotmap__id(x, free_item->version);
+      slotmap__frc(arr)--;
       slotmap__frl(arr) = free_item->next_free;
       return (uint8_t *)free_item;
     } else {
