@@ -60,7 +60,7 @@ typedef struct {
 
 // Copy an entry 'o' into a new slot in slot map 'a', setting 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
-#define slotmap64_copy(a,o,id)  slotmap64__new(a,id, { *item = *((__typeof__(a))o); })
+#define slotmap64_copy(a,o,id)  slotmap64__new(a,id, { *__item__ = *((__typeof__(a))o); })
 
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
@@ -70,26 +70,30 @@ typedef struct {
 // Get a pointer to an element by supplying the slot map 'a' that contains it and its SLOTMAP64_ID 'id'.
 // Returns: A pointer to the element or NULL if the element is not found.
 #define slotmap64_at(a,id)     (!a ? 0 : ({ \
-  __typeof__(a) item = NULL; \
+  __typeof__(a) __item__ = NULL; \
   if ((id).index < slotmap64__use(a)) { \
-    item = slotmap64_array(a) + (id).index; \
-    item = (item->version != (id).version ? NULL : item); \
+    __item__ = slotmap64_array(a) + (id).index; \
+    __item__ = (__item__->version != (id).version ? NULL : __item__); \
   } \
-  item; \
+  __item__; \
 }))
 
 // Removes an element with SLOTMAP64_ID 'id' from the slot map 'a'.
-// Returns: A pointer to the element or NULL if the element is not found. The pointer is only
+#define slotmap_remove(a,id)  slotmap_remove_and(a,id,__item__,{})
+
+// Removes an element with SLOTMAP64_ID 'id' from the slot map 'a' and handles the
+// item in the attached block using name of 'item' for the pointer. The pointer is only
 // provided for final access to the element - please do not store the pointer, it is useless
 // to any subsequent calls.
-#define slotmap64_remove(a,id)  (!a ? 0 : ({ \
-  __typeof__(a) item = slotmap64_at(a,id); \
-  if (item) { \
-    *((SLOTMAP64_FREE *)item) = (SLOTMAP64_FREE){item->version + 1, slotmap64__frl(a)}; \
+#define slotmap64_remove_and(a,id,item,...)  (!a ? 0 : ({ \
+  __typeof__(a) __item__ = slotmap64_at(a,id); \
+  if (__item__) { \
+    __VA_ARGS__; \
+    *((SLOTMAP64_FREE *)__item__) = (SLOTMAP64_FREE){__item__->version + 1, slotmap64__frl(a)}; \
     slotmap64__frl(a) = (id).index; \
     slotmap64__frc(c)++; \
   } \
-  item; \
+  __item__; \
 }))
 
 // Fetch the beginning of the actual items.
@@ -105,12 +109,12 @@ typedef struct {
 #define slotmap64__frc(a)       ((uint32_t *)(a))[3]
 
 #define slotmap64__new(a,id,...)     ({ \
-  __typeof__(a) item = (__typeof__(a))slotmap64__make((uint8_t **)&a, sizeof(*(a)), &id); \
-  if (item) { \
+  __typeof__(a) __item__ = (__typeof__(a))slotmap64__make((uint8_t **)&a, sizeof(*(a)), &id); \
+  if (__item__) { \
     __VA_ARGS__; \
-    item->version = (id).version; \
+    __item__->version = (id).version; \
   } \
-  item; \
+  __item__; \
 })
 
 #include <string.h>
@@ -135,6 +139,7 @@ slotmap64__make(uint8_t **ary, size_t itemsize, SLOTMAP64_ID *idp)
     if (x != SLOTMAP64_MAX_INDEX) {
       SLOTMAP64_FREE *free_item = (SLOTMAP64_FREE *)(slotmap64_array(arr) + (x * itemsize));
       *idp = slotmap64__id(x, free_item->version);
+      slotmap64__frc(arr)--;
       slotmap64__frl(arr) = free_item->next_free;
       return (uint8_t *)free_item;
     } else {

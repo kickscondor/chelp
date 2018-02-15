@@ -34,10 +34,10 @@
 //   vertex arrays. Good for the CPU cache.
 // * Keep memory low? I don't know - there's a 1 byte overhead on each entry.
 //
-// TODO: Defragment the slotmap. What I want to do with this is to make the freelist
+// TODO: Size down the slotmap. What I want to do with this is to make the freelist
 // only as big as the difference between the last allocation size and the new
-// allocation size. And once the freelist fills completely, then I'll defrag the
-// entire list and empty the freelist.
+// allocation size. And once the freelist fills completely, then I'll size the
+// entire list down.
 //
 // LICENSE
 //
@@ -87,7 +87,7 @@ typedef struct {
 
 // Copy an entry 'o' into a new slot in slot map 'a', setting 'id' to the ID of the new entry.
 // Returns: A pointer to the new item or NULL if the slot map has reached its maximum.
-#define slotmap_copy(a,o,id)  slotmap__new(a,id, { *item = *((__typeof__(a))o); })
+#define slotmap_copy(a,o,id)  slotmap__new(a,id, { *__item__ = *((__typeof__(a))o); })
 
 // Determine an element's ID by supplying the slot map 'a' that contains it and a pointer 'o'
 // to the element itself.
@@ -98,21 +98,25 @@ typedef struct {
 // Returns: A pointer to the element or NULL if the element is not found.
 #define slotmap_at(a,id)     (!a ? 0 : ({ \
   SLOT_ID __id__ = slotmap_index(id); \
-  __typeof__(a) item = NULL; \
+  __typeof__(a) __item__ = NULL; \
   if (__id__ < slotmap__use(a)) { \
-    item = slotmap_array(a) + __id__; \
-    item = (item->version != (id >> 24) ? NULL : item); \
+    __item__ = slotmap_array(a) + __id__; \
+    __item__ = (__item__->version != (id >> 24) ? NULL : __item__); \
   } \
-  item; \
+  __item__; \
 }))
 
 // Removes an element with SLOT_ID 'id' from the slot map 'a'.
-// Returns: A pointer to the element or NULL if the element is not found. The pointer is only
+#define slotmap_remove(a,id)  slotmap_remove_and(a,id,__item__,{})
+
+// Removes an element with SLOT_ID 'id' from the slot map 'a' and handles the
+// item in the attached block using name of 'item' for the pointer. The pointer is only
 // provided for final access to the element - please do not store the pointer, it is useless
 // to any subsequent calls.
-#define slotmap_remove(a,id)  (!a ? 0 : ({ \
+#define slotmap_remove_and(a,id,item,...)  (!a ? 0 : ({ \
   __typeof__(a) item = slotmap_at(a,id); \
   if (item) { \
+    __VA_ARGS__; \
     *((SLOTMAP_FREE *)item) = (SLOTMAP_FREE){item->version + 1, slotmap__frl(a)}; \
     slotmap__frl(a) = slotmap_index(id); \
     slotmap__frc(a)++; \
@@ -133,12 +137,12 @@ typedef struct {
 #define slotmap__frc(a)       ((SLOT_ID *)(a))[3]
 
 #define slotmap__new(a,id,...)     ({ \
-  __typeof__(a) item = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
-  if (item) { \
+  __typeof__(a) __item__ = (__typeof__(a))slotmap__make((uint8_t **)&a, sizeof(*(a)), &id); \
+  if (__item__) { \
     __VA_ARGS__; \
-    item->version = (id >> 24); \
+    __item__->version = (id >> 24); \
   } \
-  item; \
+  __item__; \
 })
 
 #include <string.h>
