@@ -127,8 +127,8 @@ typedef struct {
 // Clean the slotmap's freelist (useful to do before looping the structure as an
 // array, to avoid garbled entries which are from the freelist.)
 #define slotmap_clean(a) (!a ? 0 : ({ \
-  Q_ID x = slotmap__frl(a); \
-  Q_IR *arr = slotmap_array(a); \
+  SLOT_ID x = slotmap__frl(a); \
+  __typeof__(a) arr = slotmap_array(a); \
   slotmap__frl(a) = SLOT_NONE_ID; \
   while (slotmap_index(x) != SLOTMAP_MAX_ID) { \
     SLOTMAP_FREE *free_item = (SLOTMAP_FREE *)(arr + x); \
