@@ -124,10 +124,13 @@ typedef struct {
   item; \
 }))
 
-// Clean the slotmap's freelist (useful to do before looping the structure as an
-// array, to avoid garbled entries which are from the freelist.)
-#define slotmap_clean(a) (!a ? 0 : ({ \
-  SLOT_ID x = slotmap__frl(a); \
+// Burn the slotmap's freelist (useful to do before looping the structure as an
+// array, to avoid garbled entries which are from the freelist.) I call this
+// 'burn' because it's destructive: we can't regain these entries unless we
+// rebuild the freelist somehow. So you really only want to do this before
+// freeing.
+#define slotmap_burn(a) (!a ? 0 : ({ \
+  Q_ID x = slotmap__frl(a); \
   __typeof__(a) arr = slotmap_array(a); \
   slotmap__frl(a) = SLOT_NONE_ID; \
   while (slotmap_index(x) != SLOTMAP_MAX_ID) { \
