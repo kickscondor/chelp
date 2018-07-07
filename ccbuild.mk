@@ -289,11 +289,10 @@ $(OUTDIR)/lib/lib$(NAME).a: objects
 
 $(OUTDIR)/bin/$(OUTBIN): objects
 	@$(ECHO) LINK $(NAME)
-	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LDFLAGS) $(LIBS) -o $(OUTBIN)
-	@cp $(OUTBINGLOB) $(OUTDIR)/bin
+	$(CC) $(CFLAGS) $(OBJ_BIN) $(OBJ) $(LDFLAGS) $(LIBS) -o $@
 	@if [ "$(DEBUG)" != "1" ]; then \
 		$(ECHO) STRIP $(NAME); \
-		$(STRIP) $(OUTDIR)/bin/$(OUTBIN); \
+		$(STRIP) $@; \
 	fi
 
 $(OUTDIR)/lib/lib$(NAME)-ios.a: setup
