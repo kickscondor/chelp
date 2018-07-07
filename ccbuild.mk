@@ -155,21 +155,16 @@ endif
 
 ifeq ($(OPENGL), 1)
 ifeq ($(PLATFORM), mac)
-	LIBS += -framework OpenGL -framework Foundation -framework CoreText -framework CoreGraphics -lglfw
+	LIBS += -framework OpenGL -framework Foundation -framework CoreGraphics -lglfw
 endif
 
 ifeq ($(PLATFORM), linux)
-	CFLAGS += -D_GNU_SOURCE \
-						`pkg-config --cflags glfw3` \
-						`pkg-config --cflags pangoft2` \
-						`curl-config --cflags`
+	CFLAGS += -D_GNU_SOURCE `pkg-config --cflags glfw3`
 	LDFLAGS += `pkg-config --libs glfw3` \
 						 `pkg-config --libs pangoft2` \
 						 `curl-config --libs`
 	LIBS += -lGL -lGLU -lGLEW
-	SDK_VERSION = glfw3-$(shell pkg-config --modversion glfw3) \
-						    pangoft2-$(shell pkg-config --modversion pangoft2) \
-						    $(shell curl-config --version)
+	SDK_VERSION = glfw3-$(shell pkg-config --modversion glfw3)
 endif
 endif
 
